@@ -10,6 +10,12 @@ void init_value_array(value_array_t* array)
     array->values = NULL;
 }
 
+void free_value_array(value_array_t* array)
+{
+    FREE_ARRAY(value_t, array->values, array->capacity);
+    init_value_array(array);
+}
+
 void write_value_array(value_array_t* array, value_t value)
 {
     if (array->capacity < array->count + 1)
@@ -21,10 +27,4 @@ void write_value_array(value_array_t* array, value_t value)
 
     array->values[array->count] = value;
     array->count++;
-}
-
-void free_value_array(value_array_t* array)
-{
-    FREE_ARRAY(value_t, array->values, array->capacity);
-    init_value_array(array);
 }
