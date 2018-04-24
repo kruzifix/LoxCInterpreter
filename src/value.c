@@ -28,3 +28,8 @@ void write_value_array(value_array_t* array, value_t value)
     array->values[array->count] = value;
     array->count++;
 }
+
+void print_value(value_t value)
+{
+    printf("%g", value);
+}
