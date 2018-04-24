@@ -4,10 +4,12 @@
     <ClCompile Include="..\src\main.c" />
     <ClCompile Include="..\src\chunk.c" />
     <ClCompile Include="..\src\memory.c" />
+    <ClCompile Include="..\src\debug.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\common.h" />
     <ClInclude Include="..\src\chunk.h" />
     <ClInclude Include="..\src\memory.h" />
+    <ClInclude Include="..\src\debug.h" />
   </ItemGroup>
 </Project>
