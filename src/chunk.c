@@ -10,6 +10,12 @@ void init_chunk(chunk_t* chunk)
     chunk->code = NULL;
 }
 
+void free_chunk(chunk_t* chunk)
+{
+    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
+    init_chunk(chunk);
+}
+
 void write_chunk(chunk_t* chunk, uint8_t byte)
 {
     if (chunk->capacity < chunk->count + 1)
