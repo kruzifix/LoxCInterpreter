@@ -6,12 +6,13 @@ int main(int argc, const char* argv[])
 {
     chunk_t chunk;
     init_chunk(&chunk);
-    int constant = add_constant(&chunk, 13.5);
+    
+    for (int i = 0; i < 400; i++)
+    {
+        write_constant(&chunk, i * 0.1, i);
+    }
 
-    write_chunk(&chunk, OP_CONSTANT);
-    write_chunk(&chunk, constant);
-
-    write_chunk(&chunk, OP_RETURN);
+    write_chunk(&chunk, OP_RETURN, 123);
 
     disassemble_chunk(&chunk, "test chunk");
 
