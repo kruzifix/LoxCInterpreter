@@ -20,6 +20,7 @@ static interpret_result_t run()
 {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 16) | (READ_BYTE() << 8) | READ_BYTE()])
 
     for (;;)
     {
@@ -32,6 +33,12 @@ static interpret_result_t run()
         {
         case OP_CONSTANT: {
             value_t constant = READ_CONSTANT();
+            print_value(constant);
+            printf("\n");
+            break;
+        }
+        case OP_CONSTANT_LONG: {
+            value_t constant = READ_CONSTANT_LONG();
             print_value(constant);
             printf("\n");
             break;

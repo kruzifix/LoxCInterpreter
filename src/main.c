@@ -16,6 +16,8 @@ int main(int argc, const char* argv[])
 
     disassemble_chunk(&chunk, "test chunk");
 
+    printf("\n\n--- running code ---\n\n");
+
     interpret(&chunk);
 
     free_vm();
