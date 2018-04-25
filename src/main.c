@@ -10,7 +10,13 @@ int main(int argc, const char* argv[])
     chunk_t chunk;
     init_chunk(&chunk);
 
-    write_constant(&chunk, 12.4, 123);
+    write_constant(&chunk, 1.2, 123);
+    write_constant(&chunk, 3.4, 123);
+    write_chunk(&chunk, OP_ADD, 123);
+
+    write_constant(&chunk, 5.6, 123);
+    write_chunk(&chunk, OP_DIVIDE, 123);
+
     write_chunk(&chunk, OP_NEGATE, 123);
 
     write_chunk(&chunk, OP_RETURN, 123);
