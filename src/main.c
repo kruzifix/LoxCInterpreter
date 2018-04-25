@@ -11,6 +11,7 @@ int main(int argc, const char* argv[])
     init_chunk(&chunk);
 
     write_constant(&chunk, 12.4, 123);
+    write_chunk(&chunk, OP_NEGATE, 123);
 
     write_chunk(&chunk, OP_RETURN, 123);
 
