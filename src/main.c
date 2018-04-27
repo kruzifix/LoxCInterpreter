@@ -1,10 +1,29 @@
+//#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+
 #include "common.h"
 #include "chunk.h"
 #include "debug.h"
 #include "vm.h"
 
+
+
 int main(int argc, const char* argv[])
 {
+    /*if (argc == 2)
+    {
+        FILE* file = fopen(argv[1], "r");
+        if (file)
+        {
+            int c;
+            while ((c = getc(file)) != EOF)
+            {
+                putchar(c);
+            }
+            fclose(file);
+        }
+    }*/
+
     init_vm();
 
     chunk_t chunk;
