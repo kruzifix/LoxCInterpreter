@@ -29,8 +29,8 @@ static interpret_result_t run()
 
 #define BINARY_OP(op) \
     do { \
-        double a = pop(); \
         double b = pop(); \
+        double a = pop(); \
         push(a op b); \
     } while (false)
 
