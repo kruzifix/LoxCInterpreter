@@ -3,7 +3,7 @@
 
 #include "trie.h"
 
-void trie_insert(trie_node_t** root, const char* string)
+void trie_insert(trie_node_t** root, const char* string, int value)
 {
     if (!*string)
         return;
@@ -16,13 +16,13 @@ void trie_insert(trie_node_t** root, const char* string)
         node->symbol = *string;
         node->child = NULL;
         node->next = NULL;
-        node->set = 0;
+        node->value = -1;
         *root = node;
     }
     if (*string < node->symbol)
     {
         trie_node_t* prev = NULL;
-        trie_insert(&prev, string);
+        trie_insert(&prev, string, value);
         prev->next = node;
         *root = prev;
     }
@@ -30,13 +30,13 @@ void trie_insert(trie_node_t** root, const char* string)
     {
         const char* next = ++string;
         if (*next)
-            trie_insert(&(node->child), next);
+            trie_insert(&(node->child), next, value);
         else
-            node->set = 1;
+            node->value = value;
     }
     else if (*string > node->symbol)
     {
-        trie_insert(&(node->next), string);
+        trie_insert(&(node->next), string, value);
     }
 }
 
@@ -50,13 +50,13 @@ int trie_contains(const trie_node_t* root, const char* string)
         while (node && *string > node->symbol)
             node = node->next;
         if (!node || node->symbol != *string)
-            return 0;
+            return -1;
         last = node;
         node = node->child;
         ++string;
     }
 
-    return last && last->set;
+    return last ? last->value : -1;
 }
 
 void trie_free(trie_node_t** root)

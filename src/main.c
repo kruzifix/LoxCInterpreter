@@ -72,30 +72,19 @@ int main(int argc, const char* argv[])
     /*
     trie_node_t* root = NULL;
 
-    trie_insert(&root, "david");
-    trie_insert(&root, "davu");
-    trie_insert(&root, "eva");
-    trie_insert(&root, "anna");
+    trie_insert(&root, "david", 5);
+    trie_insert(&root, "davu", 3);
+    trie_insert(&root, "eva", 2);
+    trie_insert(&root, "anna", 10);
 
-    printf("trie contains 'anna': %s\n", trie_contains(root, "anna") ? "yes" : "no");
-    printf("trie contains 'banana': %s\n", trie_contains(root, "banana") ? "yes" : "no");
-    printf("trie contains 'david': %s\n", trie_contains(root, "david") ? "yes" : "no");
-    printf("trie contains 'eva': %s\n", trie_contains(root, "eva") ? "yes" : "no");
-    printf("trie contains 'davu': %s\n", trie_contains(root, "davu") ? "yes" : "no");
-    printf("trie contains 'dav': %s\n", trie_contains(root, "dav") ? "yes" : "no");
-    printf("trie contains 'random': %s\n", trie_contains(root, "random") ? "yes" : "no");
-    printf("trie contains 'count': %s\n", trie_contains(root, "count") ? "yes" : "no");
-
-    trie_insert(&root, "dav");
-
-    printf("\n\ntrie contains 'anna': %s\n", trie_contains(root, "anna") ? "yes" : "no");
-    printf("trie contains 'banana': %s\n", trie_contains(root, "banana") ? "yes" : "no");
-    printf("trie contains 'david': %s\n", trie_contains(root, "david") ? "yes" : "no");
-    printf("trie contains 'eva': %s\n", trie_contains(root, "eva") ? "yes" : "no");
-    printf("trie contains 'davu': %s\n", trie_contains(root, "davu") ? "yes" : "no");
-    printf("trie contains 'dav': %s\n", trie_contains(root, "dav") ? "yes" : "no");
-    printf("trie contains 'random': %s\n", trie_contains(root, "random") ? "yes" : "no");
-    printf("trie contains 'count': %s\n", trie_contains(root, "count") ? "yes" : "no");
+    printf("trie contains 'anna': %i\n", trie_contains(root, "anna"));
+    printf("trie contains 'banana': %i\n", trie_contains(root, "banana"));
+    printf("trie contains 'david': %i\n", trie_contains(root, "david"));
+    printf("trie contains 'eva': %i\n", trie_contains(root, "eva"));
+    printf("trie contains 'davu': %i\n", trie_contains(root, "davu"));
+    printf("trie contains 'dav': %i\n", trie_contains(root, "dav"));
+    printf("trie contains 'random': %i\n", trie_contains(root, "random"));
+    printf("trie contains 'count': %i\n", trie_contains(root, "count"));
 
     trie_free(&root);
 
