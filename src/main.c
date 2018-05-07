@@ -6,6 +6,8 @@
 #include "debug.h"
 #include "vm.h"
 
+//#include "trie.h"
+
 /*
 #define OK 1
 #define ERROR 0
@@ -67,6 +69,39 @@ int expr()
 
 int main(int argc, const char* argv[])
 {
+    /*
+    trie_node_t* root = NULL;
+
+    trie_insert(&root, "david");
+    trie_insert(&root, "davu");
+    trie_insert(&root, "eva");
+    trie_insert(&root, "anna");
+
+    printf("trie contains 'anna': %s\n", trie_contains(root, "anna") ? "yes" : "no");
+    printf("trie contains 'banana': %s\n", trie_contains(root, "banana") ? "yes" : "no");
+    printf("trie contains 'david': %s\n", trie_contains(root, "david") ? "yes" : "no");
+    printf("trie contains 'eva': %s\n", trie_contains(root, "eva") ? "yes" : "no");
+    printf("trie contains 'davu': %s\n", trie_contains(root, "davu") ? "yes" : "no");
+    printf("trie contains 'dav': %s\n", trie_contains(root, "dav") ? "yes" : "no");
+    printf("trie contains 'random': %s\n", trie_contains(root, "random") ? "yes" : "no");
+    printf("trie contains 'count': %s\n", trie_contains(root, "count") ? "yes" : "no");
+
+    trie_insert(&root, "dav");
+
+    printf("\n\ntrie contains 'anna': %s\n", trie_contains(root, "anna") ? "yes" : "no");
+    printf("trie contains 'banana': %s\n", trie_contains(root, "banana") ? "yes" : "no");
+    printf("trie contains 'david': %s\n", trie_contains(root, "david") ? "yes" : "no");
+    printf("trie contains 'eva': %s\n", trie_contains(root, "eva") ? "yes" : "no");
+    printf("trie contains 'davu': %s\n", trie_contains(root, "davu") ? "yes" : "no");
+    printf("trie contains 'dav': %s\n", trie_contains(root, "dav") ? "yes" : "no");
+    printf("trie contains 'random': %s\n", trie_contains(root, "random") ? "yes" : "no");
+    printf("trie contains 'count': %s\n", trie_contains(root, "count") ? "yes" : "no");
+
+    trie_free(&root);
+
+    return 0;
+    */
+
     /*
     lookahead = getchar();
     int res = expr();
