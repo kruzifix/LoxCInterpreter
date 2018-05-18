@@ -44,11 +44,34 @@ static token_t error_token(const char* message)
     return token;
 }
 
+static char advance()
+{
+    scanner.current++;
+    return scanner.current[-1];
+}
+
 token_t scan_token()
 {
     scanner.start = scanner.current;
 
     if (is_at_end()) return make_token(TOKEN_EOF);
+
+    char c = advance();
+
+    switch (c)
+    {
+        case '(': return make_token(TOKEN_LEFT_PAREN);
+        case ')': return make_token(TOKEN_RIGHT_PAREN);
+        case '{': return make_token(TOKEN_LEFT_BRACE);
+        case '}': return make_token(TOKEN_RIGHT_BRACE);
+        case ';': return make_token(TOKEN_SEMICOLON);
+        case ',': return make_token(TOKEN_COMMA);
+        case '.': return make_token(TOKEN_DOT);
+        case '-': return make_token(TOKEN_MINUS);
+        case '+': return make_token(TOKEN_PLUS);
+        case '/': return make_token(TOKEN_SLASH);
+        case '*': return make_token(TOKEN_STAR);
+    }
 
     return error_token("Unexpected character.");
 }

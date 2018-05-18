@@ -24,7 +24,7 @@ static void repl()
             break;
         }
 
-        //interpret(line);
+        interpret(line);
     }
 }
 
