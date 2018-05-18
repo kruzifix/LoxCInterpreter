@@ -104,6 +104,23 @@ static void skip_whitespace()
     }
 }
 
+static token_t string()
+{
+    while (peek() != '"' && !is_at_end())
+    {
+        if (peek() == '\n')
+            scanner.line++;
+        advance();
+    }
+
+    if (is_at_end())
+        return error_token("Unterminated string.");
+
+    // closing "
+    advance();
+    return make_token(TOKEN_STRING);
+}
+
 token_t scan_token()
 {
     skip_whitespace();
@@ -131,6 +148,7 @@ token_t scan_token()
         case '=': return make_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
         case '<': return make_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
         case '>': return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+        case '"': return string();
     }
 
     return error_token("Unexpected character.");
