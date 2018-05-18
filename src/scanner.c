@@ -66,6 +66,13 @@ static char peek()
     return *scanner.current;
 }
 
+static char peek_next()
+{
+    if (is_at_end())
+        return '\0';
+    return scanner.current[1];
+}
+
 static void skip_whitespace()
 {
     for (;;)
@@ -81,6 +88,15 @@ static void skip_whitespace()
         case '\n':
             scanner.line++;
             advance();
+            break;
+        case '/':
+            if (peek_next() == '/')
+            {
+                // A comment goes until the end of the line.
+                while (peek() != '\n' && !is_at_end()) advance();
+            }
+            else
+                return;
             break;
         default:
             return;
