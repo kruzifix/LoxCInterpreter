@@ -121,6 +121,28 @@ static token_t string()
     return make_token(TOKEN_STRING);
 }
 
+static bool is_digit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+
+static token_t number()
+{
+    while (is_digit(peek()))
+        advance();
+
+    // fractional part
+    if (peek() == '.' && is_digit(peek_next()))
+    {
+        advance();
+
+        while (is_at_end(peek()))
+            advance();
+    }
+
+    return make_token(TOKEN_NUMBER);
+}
+
 token_t scan_token()
 {
     skip_whitespace();
@@ -130,6 +152,7 @@ token_t scan_token()
     if (is_at_end()) return make_token(TOKEN_EOF);
 
     char c = advance();
+    if (is_digit(c)) return number();
 
     switch (c)
     {
