@@ -50,8 +50,48 @@ static char advance()
     return scanner.current[-1];
 }
 
+static bool match(char expected)
+{
+    if (is_at_end())
+        return false;
+    if (*scanner.current != expected)
+        return false;
+
+    scanner.current++;
+    return true;
+}
+
+static char peek()
+{
+    return *scanner.current;
+}
+
+static void skip_whitespace()
+{
+    for (;;)
+    {
+        char c = peek();
+        switch (c)
+        {
+        case ' ':
+        case '\r':
+        case '\t':
+            advance();
+            break;
+        case '\n':
+            scanner.line++;
+            advance();
+            break;
+        default:
+            return;
+        }
+    }
+}
+
 token_t scan_token()
 {
+    skip_whitespace();
+
     scanner.start = scanner.current;
 
     if (is_at_end()) return make_token(TOKEN_EOF);
@@ -71,6 +111,10 @@ token_t scan_token()
         case '+': return make_token(TOKEN_PLUS);
         case '/': return make_token(TOKEN_SLASH);
         case '*': return make_token(TOKEN_STAR);
+        case '!': return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+        case '=': return make_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+        case '<': return make_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+        case '>': return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
     }
 
     return error_token("Unexpected character.");
