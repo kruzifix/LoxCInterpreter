@@ -143,6 +143,26 @@ static token_t number()
     return make_token(TOKEN_NUMBER);
 }
 
+static bool is_alpha(char c)
+{
+    return (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        c == '_';
+}
+
+static token_type_t identifier_type()
+{
+    return TOKEN_IDENTIFIER;
+}
+
+static token_t identifier()
+{
+    while (is_alpha(peek()) || is_digit(peek()))
+        advance();
+
+    return make_token(identifier_type());
+}
+
 token_t scan_token()
 {
     skip_whitespace();
@@ -152,6 +172,7 @@ token_t scan_token()
     if (is_at_end()) return make_token(TOKEN_EOF);
 
     char c = advance();
+    if (is_alpha(c)) return identifier();
     if (is_digit(c)) return number();
 
     switch (c)
