@@ -24,7 +24,8 @@ static void repl()
             break;
         }
 
-        interpret(line);
+        interpret_result_t result = interpret(line);
+        printf("result: %s\n", INTERPRET_RESULT_STRING[result]);
     }
 }
 

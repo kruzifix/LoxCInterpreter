@@ -5,6 +5,12 @@
 #include "debug.h"
 #include "vm.h"
 
+const char* INTERPRET_RESULT_STRING[] = {
+    "OK",
+    "COMPILE_ERROR",
+    "RUNTIME_ERROR"
+};
+
 vm_t vm;
 
 static void reset_stack()

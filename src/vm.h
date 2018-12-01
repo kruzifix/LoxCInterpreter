@@ -12,6 +12,8 @@ typedef enum {
     INTERPRET_RUNTIME_ERROR
 } interpret_result_t;
 
+const char* INTERPRET_RESULT_STRING[];
+
 typedef struct {
     chunk_t* chunk;
     uint8_t* ip;
