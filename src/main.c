@@ -25,7 +25,7 @@ static void repl()
         }
 
         interpret_result_t result = interpret(line);
-        printf("result: %s\n", INTERPRET_RESULT_STRING[result]);
+        printf("\nresult: %s\n", INTERPRET_RESULT_STRING[result]);
     }
 }
 

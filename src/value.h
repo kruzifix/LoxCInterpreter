@@ -34,6 +34,8 @@ typedef struct {
     value_t* values;
 } value_array_t;
 
+bool values_equal(value_t a, value_t b);
+
 void init_value_array(value_array_t* array);
 void free_value_array(value_array_t* array);
 void write_value_array(value_array_t* array, value_t value);

@@ -95,11 +95,21 @@ static interpret_result_t run()
         case OP_NIL: push(NIL_VAL); break;
         case OP_TRUE: push(BOOL_VAL(true)); break;
         case OP_FALSE: push(BOOL_VAL(false)); break;
+
+        case OP_EQUAL: {
+            value_t a = pop();
+            value_t b = pop();
+            push(BOOL_VAL(values_equal(a, b)));
+            break;
+        }
+
         case OP_CONSTANT_LONG: {
             value_t constant = READ_CONSTANT_LONG();
             push(constant);
             break;
         }
+        case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;
+        case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
         case OP_ADD:        BINARY_OP(NUMBER_VAL, +); break;
         case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
         case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
@@ -114,6 +124,7 @@ static interpret_result_t run()
             push(NUMBER_VAL(-AS_NUMBER(pop())));
             break;
         case OP_RETURN: {
+            printf("\n");
             print_value(pop());
             printf("\n");
             return INTERPRET_OK;
