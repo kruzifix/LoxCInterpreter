@@ -195,6 +195,9 @@ static void unary()
 
     switch (operatorType)
     {
+    case TOKEN_BANG:
+        emit_byte(OP_NOT);
+        break;
     case TOKEN_MINUS:
         emit_byte(OP_NEGATE);
         break;
@@ -215,7 +218,7 @@ parse_rule_t rules[] = {
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
     { NULL,     binary,  PREC_FACTOR },     // TOKEN_SLASH
     { NULL,     binary,  PREC_FACTOR },     // TOKEN_STAR
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_BANG
+    { unary,     NULL,    PREC_NONE },       // TOKEN_BANG
     { NULL,     NULL,    PREC_EQUALITY },   // TOKEN_BANG_EQUAL
     { NULL,     NULL,    PREC_NONE },       // TOKEN_EQUAL
     { NULL,     NULL,    PREC_EQUALITY },   // TOKEN_EQUAL_EQUAL
@@ -229,17 +232,17 @@ parse_rule_t rules[] = {
     { NULL,     NULL,    PREC_AND },        // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
-    { literal,     NULL,    PREC_NONE },       // TOKEN_FALSE
+    { literal,     NULL,    PREC_NONE },    // TOKEN_FALSE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
-    { literal,     NULL,    PREC_NONE },       // TOKEN_NIL
+    { literal,     NULL,    PREC_NONE },    // TOKEN_NIL
     { NULL,     NULL,    PREC_OR },         // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
     { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
-    { literal,     NULL,    PREC_NONE },       // TOKEN_TRUE
+    { literal,     NULL,    PREC_NONE },    // TOKEN_TRUE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR

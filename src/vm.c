@@ -48,6 +48,11 @@ static value_t peek(int distance)
     return vm.stack_top[-1 - distance];
 }
 
+static bool isFalsey(value_t value)
+{
+    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 static interpret_result_t run()
 {
 #define READ_BYTE() (*vm.ip++)
@@ -99,6 +104,7 @@ static interpret_result_t run()
         case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
         case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
         case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;
+        case OP_NOT: push(BOOL_VAL(isFalsey(pop()))); break;
         case OP_NEGATE:
             if (!IS_NUMBER(peek(0)))
             {
