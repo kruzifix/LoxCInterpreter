@@ -87,6 +87,9 @@ static interpret_result_t run()
             push(constant);
             break;
         }
+        case OP_NIL: push(NIL_VAL); break;
+        case OP_TRUE: push(BOOL_VAL(true)); break;
+        case OP_FALSE: push(BOOL_VAL(false)); break;
         case OP_CONSTANT_LONG: {
             value_t constant = READ_CONSTANT_LONG();
             push(constant);
