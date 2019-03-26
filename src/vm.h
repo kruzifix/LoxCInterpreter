@@ -22,12 +22,12 @@ typedef struct {
     value_t* stack_top;
 } vm_t;
 
-void init_vm();
-void free_vm();
+void init_vm(void);
+void free_vm(void);
 
 interpret_result_t interpret(const char* source);
 
 void push(value_t value);
-value_t pop();
+value_t pop(void);
 
 #endif

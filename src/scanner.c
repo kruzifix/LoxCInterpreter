@@ -19,7 +19,7 @@ void init_scanner(const char* source)
     scanner.line = 1;
 }
 
-static bool is_at_end()
+static bool is_at_end(void)
 {
     return !*scanner.current;
 }
@@ -44,7 +44,7 @@ static token_t error_token(const char* message)
     return token;
 }
 
-static char advance()
+static char advance(void)
 {
     scanner.current++;
     return scanner.current[-1];
@@ -61,19 +61,19 @@ static bool match(char expected)
     return true;
 }
 
-static char peek()
+static char peek(void)
 {
     return *scanner.current;
 }
 
-static char peek_next()
+static char peek_next(void)
 {
     if (is_at_end())
         return '\0';
     return scanner.current[1];
 }
 
-static void skip_whitespace()
+static void skip_whitespace(void)
 {
     for (;;)
     {
@@ -104,7 +104,7 @@ static void skip_whitespace()
     }
 }
 
-static token_t string()
+static token_t string(void)
 {
     while (peek() != '"' && !is_at_end())
     {
@@ -126,7 +126,7 @@ static bool is_digit(char c)
     return c >= '0' && c <= '9';
 }
 
-static token_t number()
+static token_t number(void)
 {
     while (is_digit(peek()))
         advance();
@@ -136,7 +136,7 @@ static token_t number()
     {
         advance();
 
-        while (is_at_end(peek()))
+        while (is_at_end())
             advance();
     }
 
@@ -158,7 +158,7 @@ static token_type_t check_keyword(int start, int length, const char* rest, token
     return TOKEN_IDENTIFIER;
 }
 
-static token_type_t identifier_type()
+static token_type_t identifier_type(void)
 {
     switch (scanner.start[0])
     {
@@ -198,7 +198,7 @@ static token_type_t identifier_type()
     return TOKEN_IDENTIFIER;
 }
 
-static token_t identifier()
+static token_t identifier(void)
 {
     while (is_alpha(peek()) || is_digit(peek()))
         advance();
@@ -206,7 +206,7 @@ static token_t identifier()
     return make_token(identifier_type());
 }
 
-token_t scan_token()
+token_t scan_token(void)
 {
     skip_whitespace();
 

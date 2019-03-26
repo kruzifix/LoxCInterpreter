@@ -43,7 +43,7 @@ void write_constant(chunk_t* chunk, value_t value, int line)
     if (constant <= 0xFF)
     {
         write_chunk(chunk, OP_CONSTANT, line);
-        write_chunk(chunk, constant, line);
+        write_chunk(chunk, (uint8_t)constant, line);
     }
     else
     {

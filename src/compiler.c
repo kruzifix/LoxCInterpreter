@@ -30,7 +30,7 @@ typedef enum {
     PREC_PRIMARY
 } precedence_t;
 
-typedef void(*ParseFn)();
+typedef void(*ParseFn)(void);
 
 typedef struct {
     ParseFn prefix;
@@ -41,7 +41,7 @@ typedef struct {
 parser_t parser;
 chunk_t* compiling_chunk;
 
-static chunk_t* current_chunk()
+static chunk_t* current_chunk(void)
 {
     return compiling_chunk;
 }
@@ -72,7 +72,7 @@ static void error_at_current(const char* message)
     error_at(&parser.current, message);
 }
 
-static void advance()
+static void advance(void)
 {
     parser.previous = parser.current;
 
@@ -108,7 +108,7 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2)
     emit_byte(byte2);
 }
 
-static void emit_return()
+static void emit_return(void)
 {
     emit_byte(OP_RETURN);
 }
@@ -129,7 +129,7 @@ static void emit_constant(value_t value)
     emit_bytes(OP_CONSTANT, make_constant(value));
 }
 
-static void end_compiler()
+static void end_compiler(void)
 {
     emit_return();
 
@@ -141,11 +141,11 @@ static void end_compiler()
 #endif
 }
 
-static void expression();
+static void expression(void);
 static parse_rule_t* get_rule(token_type_t type);
 static void parse_precedence(precedence_t precedence);
 
-static void binary()
+static void binary(void)
 {
     token_type_t operatorType = parser.previous.type;
 
@@ -170,7 +170,7 @@ static void binary()
     }
 }
 
-static void literal()
+static void literal(void)
 {
     switch (parser.previous.type)
     {
@@ -182,19 +182,24 @@ static void literal()
     }
 }
 
-static void grouping()
+static void grouping(void)
 {
     expression();
     consume(TOKEN_RIGHT_PAREN, "expected ')' after expression.");
 }
 
-static void number()
+static void number(void)
 {
     double value = strtod(parser.previous.start, NULL);
     emit_constant(NUMBER_VAL(value));
 }
 
-static void unary()
+static void string(void)
+{
+    emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
+}
+
+static void unary(void)
 {
     token_type_t operatorType = parser.previous.type;
 
@@ -234,7 +239,7 @@ parse_rule_t rules[] = {
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_STRING
+    { string,   NULL,    PREC_NONE },       // TOKEN_STRING
     { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
     { NULL,     NULL,    PREC_AND },        // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
@@ -280,7 +285,7 @@ static parse_rule_t* get_rule(token_type_t type)
     return &rules[type];
 }
 
-void expression()
+void expression(void)
 {
     parse_precedence(PREC_ASSIGNMENT);
 }

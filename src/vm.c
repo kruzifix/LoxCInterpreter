@@ -1,9 +1,11 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
 #include "debug.h"
+#include "memory.h"
 #include "vm.h"
 
 const char* INTERPRET_RESULT_STRING[] = {
@@ -14,7 +16,7 @@ const char* INTERPRET_RESULT_STRING[] = {
 
 vm_t vm;
 
-static void reset_stack()
+static void reset_stack(void)
 {
     vm.stack_top = vm.stack;
 }
@@ -33,12 +35,12 @@ static void runtime_error(const char* format, ...)
     reset_stack();
 }
 
-void init_vm()
+void init_vm(void)
 {
     reset_stack();
 }
 
-void free_vm()
+void free_vm(void)
 {
 
 }
@@ -53,7 +55,22 @@ static bool isFalsey(value_t value)
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
-static interpret_result_t run()
+static void concatenate()
+{
+    obj_string_t* b = AS_STRING(pop());
+    obj_string_t* a = AS_STRING(pop());
+
+    int length = a->length + b->length;
+    char* chars = ALLOCATE(char, length + 1);
+    memcpy(chars, a->chars, a->length);
+    memcpy(chars + a->length, b->chars, b->length);
+    chars[length] = '\0';
+
+    obj_string_t* result = take_string(chars, length);
+    push(OBJ_VAL(result));
+}
+
+static interpret_result_t run(void)
 {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
@@ -110,7 +127,24 @@ static interpret_result_t run()
         }
         case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;
         case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
-        case OP_ADD:        BINARY_OP(NUMBER_VAL, +); break;
+        case OP_ADD: {
+            if (IS_STRING(peek(0)) && IS_STRING(peek(1)))
+            {
+                concatenate();
+            }
+            else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1)))
+            {
+                double b = AS_NUMBER(pop());
+                double a = AS_NUMBER(pop());
+                push(NUMBER_VAL(a + b));
+            }
+            else
+            {
+                runtime_error("Operands must be two numbers or two strings.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
         case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
         case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
         case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;
@@ -163,7 +197,7 @@ void push(value_t value)
     vm.stack_top++;
 }
 
-value_t pop()
+value_t pop(void)
 {
     vm.stack_top--;
     return *vm.stack_top;
