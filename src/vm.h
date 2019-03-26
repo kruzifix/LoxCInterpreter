@@ -20,7 +20,11 @@ typedef struct {
 
     value_t stack[STACK_MAX];
     value_t* stack_top;
+
+    obj_t* objects;
 } vm_t;
+
+extern vm_t vm;
 
 void init_vm(void);
 void free_vm(void);

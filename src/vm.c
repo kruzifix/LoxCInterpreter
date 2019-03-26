@@ -5,6 +5,7 @@
 #include "common.h"
 #include "compiler.h"
 #include "debug.h"
+#include "object.h"
 #include "memory.h"
 #include "vm.h"
 
@@ -38,11 +39,12 @@ static void runtime_error(const char* format, ...)
 void init_vm(void)
 {
     reset_stack();
+    vm.objects = NULL;
 }
 
 void free_vm(void)
 {
-
+    free_objects();
 }
 
 static value_t peek(int distance)

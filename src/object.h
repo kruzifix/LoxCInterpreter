@@ -18,6 +18,7 @@ typedef enum {
 struct sobj_t
 {
     obj_type_t type;
+    struct sobj_t* next;
 };
 
 struct sobj_string_t
