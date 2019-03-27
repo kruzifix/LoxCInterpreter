@@ -78,11 +78,18 @@ static void concatenate()
 
 static interpret_result_t run(void)
 {
-#define READ_BYTE() (*vm.ip++)
+#define READ_BYTE() (*(vm.ip++))
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-#define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 16) | (READ_BYTE() << 8) | READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
-#define READ_STRING_LONG() AS_STRING(READ_CONSTANT_LONG())
+
+#define CONSTANT_LONG(name) int constIndex = 0; \
+    constIndex |= ((int)READ_BYTE() << 16); \
+    constIndex |= ((int)READ_BYTE() << 8); \
+    constIndex |= READ_BYTE(); \
+    value_t name = vm.chunk->constants.values[constIndex]
+
+#define STRING_LONG(name) CONSTANT_LONG(constant); \
+    obj_string_t* name = AS_STRING(constant)
 
 #define BINARY_OP(valueType, op) \
     do { \
@@ -117,10 +124,41 @@ static interpret_result_t run(void)
             push(constant);
             break;
         }
+
+        case OP_CONSTANT_LONG: {
+            CONSTANT_LONG(constant);
+            push(constant);
+            break;
+        }
+
         case OP_NIL: push(NIL_VAL); break;
         case OP_TRUE: push(BOOL_VAL(true)); break;
         case OP_FALSE: push(BOOL_VAL(false)); break;
         case OP_POP: pop(); break;
+
+        case OP_GET_GLOBAL: {
+            obj_string_t* name = READ_STRING();
+            value_t value;
+            if (!table_get(&vm.globals, name, &value))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
+
+        case OP_GET_GLOBAL_LONG: {
+            STRING_LONG(name);
+            value_t value;
+            if (!table_get(&vm.globals, name, &value))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
 
         case OP_DEFINE_GLOBAL: {
             obj_string_t* name = READ_STRING();
@@ -130,7 +168,7 @@ static interpret_result_t run(void)
         }
 
         case OP_DEFINE_GLOBAL_LONG: {
-            obj_string_t* name = READ_STRING_LONG();
+            STRING_LONG(name);
             table_set(&vm.globals, name, peek(0));
             pop();
             break;
@@ -143,11 +181,6 @@ static interpret_result_t run(void)
             break;
         }
 
-        case OP_CONSTANT_LONG: {
-            value_t constant = READ_CONSTANT_LONG();
-            push(constant);
-            break;
-        }
         case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;
         case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
         case OP_ADD: {

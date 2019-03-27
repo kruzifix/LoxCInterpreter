@@ -121,6 +121,19 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2)
     emit_byte(byte2);
 }
 
+static void emit_with_arg(uint8_t code, uint8_t codeLong, int arg)
+{
+    if (arg <= 0xFF)
+    {
+        emit_bytes(code, (uint8_t)arg);
+    }
+    else
+    {
+        emit_bytes(codeLong, (arg >> 16) & 0xFF);
+        emit_bytes((arg >> 8) & 0xFF, arg & 0xFF);
+    }
+}
+
 static void emit_return(void)
 {
     emit_byte(OP_RETURN);
@@ -209,6 +222,18 @@ static void string(void)
     emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
+static void named_variable(token_t name)
+{
+    int arg = identifier_constant(&name);
+
+    emit_with_arg(OP_GET_GLOBAL, OP_GET_GLOBAL_LONG, arg);
+}
+
+static void variable(void)
+{
+    named_variable(parser.previous);
+}
+
 static void unary(void)
 {
     token_type_t operatorType = parser.previous.type;
@@ -248,7 +273,7 @@ parse_rule_t rules[] = {
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER_EQUAL
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
+    { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
     { string,   NULL,    PREC_NONE },       // TOKEN_STRING
     { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
     { NULL,     NULL,    PREC_AND },        // TOKEN_AND
@@ -308,15 +333,7 @@ static int parse_variable(const char* errorMessage)
 
 static void define_variable(int global)
 {
-    if (global <= 0xFF)
-    {
-        emit_bytes(OP_DEFINE_GLOBAL, (uint8_t)global);
-    }
-    else
-    {
-        emit_bytes(OP_DEFINE_GLOBAL_LONG, (global >> 16) & 0xFF);
-        emit_bytes((global >> 8) & 0xFF, global & 0xFF);
-    }
+    emit_with_arg(OP_DEFINE_GLOBAL, OP_DEFINE_GLOBAL_LONG, global);
 }
 
 static void expression(void)
