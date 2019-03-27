@@ -18,7 +18,11 @@ typedef struct {
 void init_table(table_t* table);
 void free_table(table_t* table);
 
+bool table_get(table_t* table, obj_string_t* key, value_t* value);
 // returns true if new entry was made
 bool table_set(table_t* table, obj_string_t* key, value_t value);
+// returns true if entry was deleted
+bool table_delete(table_t* table, obj_string_t* key);
+void table_add_all(table_t* from, table_t* to);
 
 #endif
