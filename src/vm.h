@@ -22,6 +22,7 @@ typedef struct {
     value_t stack[STACK_MAX];
     value_t* stack_top;
 
+    table_t globals;
     table_t strings;
 
     obj_t* objects;

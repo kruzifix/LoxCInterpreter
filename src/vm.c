@@ -39,12 +39,14 @@ static void runtime_error(const char* format, ...)
 void init_vm(void)
 {
     reset_stack();
+    init_table(&vm.globals);
     init_table(&vm.strings);
     vm.objects = NULL;
 }
 
 void free_vm(void)
 {
+    free_table(&vm.globals);
     free_table(&vm.strings);
     free_objects();
 }
@@ -79,6 +81,7 @@ static interpret_result_t run(void)
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 16) | (READ_BYTE() << 8) | READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define BINARY_OP(valueType, op) \
     do { \
@@ -116,6 +119,14 @@ static interpret_result_t run(void)
         case OP_NIL: push(NIL_VAL); break;
         case OP_TRUE: push(BOOL_VAL(true)); break;
         case OP_FALSE: push(BOOL_VAL(false)); break;
+        case OP_POP: pop(); break;
+
+        case OP_DEFINE_GLOBAL: {
+            obj_string_t* name = READ_STRING();
+            table_set(&vm.globals, name, peek(0));
+            pop();
+            break;
+        }
 
         case OP_EQUAL: {
             value_t a = pop();
@@ -161,10 +172,13 @@ static interpret_result_t run(void)
             }
             push(NUMBER_VAL(-AS_NUMBER(pop())));
             break;
-        case OP_RETURN: {
-            printf("\n");
+
+        case OP_PRINT: {
             print_value(pop());
             printf("\n");
+            break;
+        }
+        case OP_RETURN: {
             return INTERPRET_OK;
         }
         }
@@ -172,6 +186,7 @@ static interpret_result_t run(void)
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_STRING
 #undef BINARY_OP
 }
 
