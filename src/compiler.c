@@ -126,20 +126,14 @@ static void emit_return(void)
     emit_byte(OP_RETURN);
 }
 
-static uint8_t make_constant(value_t value)
+static int make_constant(value_t value)
 {
-    int constant = add_constant(current_chunk(), value);
-    if (constant > UINT8_MAX)
-    {
-        error("Too many constants in one chunk.");
-        return 0;
-    }
-    return (uint8_t)constant;
+    return add_constant(current_chunk(), value);
 }
 
 static void emit_constant(value_t value)
 {
-    emit_bytes(OP_CONSTANT, make_constant(value));
+    write_constant(current_chunk(), value, parser.previous.line);
 }
 
 static void end_compiler(void)
@@ -301,20 +295,28 @@ static parse_rule_t* get_rule(token_type_t type)
     return &rules[type];
 }
 
-static uint8_t identifier_constant(token_t* token)
+static int identifier_constant(token_t* token)
 {
     return make_constant(OBJ_VAL(copy_string(token->start, token->length)));
 }
 
-static uint8_t parse_variable(const char* errorMessage)
+static int parse_variable(const char* errorMessage)
 {
     consume(TOKEN_IDENTIFIER, errorMessage);
     return identifier_constant(&parser.previous);
 }
 
-static void define_variable(uint8_t global)
+static void define_variable(int global)
 {
-    emit_bytes(OP_DEFINE_GLOBAL, global);
+    if (global <= 0xFF)
+    {
+        emit_bytes(OP_DEFINE_GLOBAL, (uint8_t)global);
+    }
+    else
+    {
+        emit_bytes(OP_DEFINE_GLOBAL_LONG, (global >> 16) & 0xFF);
+        emit_bytes((global >> 8) & 0xFF, global & 0xFF);
+    }
 }
 
 static void expression(void)
@@ -331,7 +333,7 @@ static void expression_statement(void)
 
 static void var_declaration(void)
 {
-    uint8_t global = parse_variable("Expect variable name.");
+    int global = parse_variable("Expect variable name.");
 
     if (match(TOKEN_EQUAL))
     {

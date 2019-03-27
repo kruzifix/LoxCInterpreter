@@ -56,7 +56,14 @@ void write_constant(chunk_t* chunk, value_t value, int line)
 
 int add_constant(chunk_t* chunk, value_t value)
 {
-    // TODO: maybe check if value already in constants and return reference to that?
+    // check if value already in constants and return reference to that
+    for (int i = 0; i < chunk->constants.capacity; ++i)
+    {
+        if (values_equal(chunk->constants.values[i], value))
+        {
+            return i;
+        }
+    }
     write_value_array(&chunk->constants, value);
     return chunk->constants.count - 1;
 }

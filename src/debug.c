@@ -16,7 +16,7 @@ void disassemble_chunk(chunk_t* chunk, const char* name)
 static int constant_instruction(const char* name, chunk_t* chunk, int offset)
 {
     uint8_t constant = chunk->code[offset + 1];
-    printf("%-16s %4d '", name, constant);
+    printf("%-16s\t%4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 2;
@@ -27,7 +27,7 @@ static int constant_long_instruction(const char* name, chunk_t* chunk, int offse
     int constant = (chunk->code[offset + 1] << 16) |
         (chunk->code[offset + 2] << 8) |
         (chunk->code[offset + 3]);
-    printf("%-16s %4d '", name, constant);
+    printf("%-16s\t%4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 4;
@@ -67,6 +67,8 @@ int disassemble_instruction(chunk_t* chunk, int offset)
         return simple_instruction("OP_POP", offset);
     case OP_DEFINE_GLOBAL:
         return constant_instruction("OP_DEFINE_GLOBAL", chunk, offset);
+    case OP_DEFINE_GLOBAL_LONG:
+        return constant_long_instruction("OP_DEFINE_GLOBAL_LONG", chunk, offset);
     case OP_EQUAL:
         return simple_instruction("OP_EQUAL", offset);
     case OP_GREATER:
