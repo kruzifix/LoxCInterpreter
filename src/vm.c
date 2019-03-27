@@ -174,6 +174,26 @@ static interpret_result_t run(void)
             break;
         }
 
+        case OP_SET_GLOBAL: {
+            obj_string_t* name = READ_STRING();
+            if (table_set(&vm.globals, name, peek(0)))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+
+        case OP_SET_GLOBAL_LONG: {
+            STRING_LONG(name);
+            if (table_set(&vm.globals, name, peek(0)))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+
         case OP_EQUAL: {
             value_t a = pop();
             value_t b = pop();

@@ -10,6 +10,8 @@
 
 #include <vld.h>
 
+#define _EXIT(code) { free_vm(); exit(code); }
+
 static void repl(void)
 {
     char line[1024];
@@ -68,14 +70,13 @@ static void run_file(const char* path)
     interpret_result_t result = interpret(source);
     free(source);
 
-    if (result == INTERPRET_COMPILE_ERROR) exit(65);
-    if (result == INTERPRET_RUNTIME_ERROR) exit(70);
+    if (result == INTERPRET_COMPILE_ERROR) _EXIT(65);
+    if (result == INTERPRET_RUNTIME_ERROR) _EXIT(70);
 }
 
 int main(int argc, const char* argv[])
 {
     init_vm();
-
     if (argc == 1)
     {
         repl();
@@ -87,7 +88,7 @@ int main(int argc, const char* argv[])
     else
     {
         fprintf(stderr, "Usage: clox [path]\n");
-        exit(64);
+        _EXIT(64);
     }
 
     free_vm();
