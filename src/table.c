@@ -33,7 +33,7 @@ entry_t* find_entry(entry_t* entries, int capacity, obj_string_t* key)
         {
             if (IS_NIL(entry->value))
             {
-                return tombstone == NULL ? tombstone : entry;
+                return tombstone != NULL ? tombstone : entry;
             }
             else
             {
