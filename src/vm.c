@@ -39,11 +39,13 @@ static void runtime_error(const char* format, ...)
 void init_vm(void)
 {
     reset_stack();
+    init_table(&vm.strings);
     vm.objects = NULL;
 }
 
 void free_vm(void)
 {
+    free_table(&vm.strings);
     free_objects();
 }
 

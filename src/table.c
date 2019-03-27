@@ -22,81 +22,81 @@ void free_table(table_t* table)
 
 entry_t* find_entry(entry_t* entries, int capacity, obj_string_t* key)
 {
-	uint32_t index = key->hash % capacity;
-	entry_t* tombstone = NULL;
+    uint32_t index = key->hash % capacity;
+    entry_t* tombstone = NULL;
 
-	while (true)
-	{
-		entry_t* entry = entries + index;
+    while (true)
+    {
+        entry_t* entry = entries + index;
 
-		if (entry->key == NULL)
-		{
-			if (IS_NIL(entry->value))
-			{
-				return tombstone == NULL ? tombstone : entry;
-			}
-			else
-			{
-				if (tombstone == NULL)
-					tombstone = entry;
-			}
-		}
-		else if (entry->key == key)
-		{
-			return entry;
-		}
+        if (entry->key == NULL)
+        {
+            if (IS_NIL(entry->value))
+            {
+                return tombstone == NULL ? tombstone : entry;
+            }
+            else
+            {
+                if (tombstone == NULL)
+                    tombstone = entry;
+            }
+        }
+        else if (entry->key == key)
+        {
+            return entry;
+        }
 
-		index = (index + 1) % capacity;
-	}
+        index = (index + 1) % capacity;
+    }
 }
 
 static void adjust_capacity(table_t* table, int capacity)
 {
-	entry_t* entries = ALLOCATE(entry_t, capacity);
-	for (int i = 0; i < capacity; ++i)
-	{
-		entries[i].key = NULL;
-		entries[i].value = NIL_VAL;
-	}
+    entry_t* entries = ALLOCATE(entry_t, capacity);
+    for (int i = 0; i < capacity; ++i)
+    {
+        entries[i].key = NULL;
+        entries[i].value = NIL_VAL;
+    }
 
-	table->count = 0;
-	for (int i = 0; i < table->capacity; ++i)
-	{
-		entry_t* entry = table->entries + i;
-		if (entry->key == NULL)
-			continue;
+    table->count = 0;
+    for (int i = 0; i < table->capacity; ++i)
+    {
+        entry_t* entry = table->entries + i;
+        if (entry->key == NULL)
+            continue;
 
-		entry_t* dest = find_entry(entries, capacity, entry->key);
-		dest->key = entry->key;
-		dest->value = entry->value;
-		table->count++;
-	}
+        entry_t* dest = find_entry(entries, capacity, entry->key);
+        dest->key = entry->key;
+        dest->value = entry->value;
+        table->count++;
+    }
 
-	FREE_ARRAY(entry_t, table->entries, table->capacity);
-	table->entries = entries;
-	table->capacity = capacity;
+    FREE_ARRAY(entry_t, table->entries, table->capacity);
+    table->entries = entries;
+    table->capacity = capacity;
 }
 
 bool table_get(table_t* table, obj_string_t* key, value_t* value)
 {
-	if (table->entries == NULL)
-		return false;
+    if (table->entries == NULL)
+        return false;
 
-	entry_t* entry = find_entry(table->entries, table->capacity, key);
-	if (entry->key == NULL)
-		return false;
+    entry_t* entry = find_entry(table->entries, table->capacity, key);
+    if (entry->key == NULL)
+        return false;
 
-	*value = entry->value;
-	return true;
+    *value = entry->value;
+    return true;
 }
 
 bool table_set(table_t* table, obj_string_t* key, value_t value)
 {
-	if (table->count + 1 > table->capacity * TABLE_MAX_LOAD)
-	{
-		int capacity = GROW_CAPACITY(table->capacity);
-		adjust_capacity(table, capacity);
-	}
+    if (table->count + 1 > table->capacity * TABLE_MAX_LOAD)
+    {
+        int capacity = GROW_CAPACITY(table->capacity);
+        adjust_capacity(table, capacity);
+    }
 
     entry_t* entry = find_entry(table->entries, table->capacity, key);
 
@@ -113,27 +113,56 @@ bool table_set(table_t* table, obj_string_t* key, value_t value)
 
 bool table_delete(table_t* table, obj_string_t* key)
 {
-	if (table->count == 0)
-		return false;
+    if (table->count == 0)
+        return false;
 
-	entry_t* entry = find_entry(table->entries, table->capacity, key);
-	if (entry->key == NULL)
-		return false;
+    entry_t* entry = find_entry(table->entries, table->capacity, key);
+    if (entry->key == NULL)
+        return false;
 
-	entry->key = NULL;
-	entry->value = BOOL_VAL(true);
+    entry->key = NULL;
+    entry->value = BOOL_VAL(true);
 
-	return true;
+    return true;
 }
 
 void table_add_all(table_t* from, table_t* to)
 {
-	for (int i = 0; i < from->capacity; ++i)
-	{
-		entry_t* entry = from->entries + i;
-		if (entry->key != NULL)
-		{
-			table_set(to, entry->key, entry->value);
-		}
-	}
+    for (int i = 0; i < from->capacity; ++i)
+    {
+        entry_t* entry = from->entries + i;
+        if (entry->key != NULL)
+        {
+            table_set(to, entry->key, entry->value);
+        }
+    }
+}
+
+obj_string_t* table_find_string(table_t* table, const char* chars, int length, uint32_t hash)
+{
+    if (table->entries == NULL)
+        return NULL;
+
+    uint32_t index = hash % table->capacity;
+
+    while (true)
+    {
+        entry_t* entry = table->entries + index;
+
+        if (entry->key == NULL)
+        {
+            // stop if we find an empty non-tombstone entry
+            if (IS_NIL(entry->value))
+                return NULL;
+        }
+        else if (entry->key->length ==length
+              && entry->key->hash == hash
+              && memcmp(entry->key->chars, chars, length) == 0)
+        {
+            // found the string!
+            return entry->key;
+        }
+
+        index = (index + 1) % table->capacity;
+    }
 }
