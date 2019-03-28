@@ -1,0 +1,1 @@
+"../bin/Release-x64/clox.exe" %*

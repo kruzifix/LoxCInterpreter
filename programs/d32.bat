@@ -1,0 +1,1 @@
+"../bin/Debug-Win32/clox.exe" %*

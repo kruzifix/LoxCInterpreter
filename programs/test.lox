@@ -1,0 +1,24 @@
+var love = "anna";
+
+{
+    var test = 1;
+    var x = 5;
+
+    var bla = x + test * x;
+
+    {
+        var asdf = bla + x - test;
+
+        print asdf;
+
+        var x = bla + 3;
+
+        print x;
+    }
+
+    print x;
+
+    print bla;
+}
+
+print love;

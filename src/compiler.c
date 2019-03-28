@@ -203,6 +203,7 @@ static void expression(void);
 static void statement(void);
 static void declaration(void);
 static int identifier_constant(token_t* token);
+static int resolve_local(compiler_t* compiler, token_t* name);
 
 static parse_rule_t* get_rule(token_type_t type);
 static void parse_precedence(precedence_t precedence);

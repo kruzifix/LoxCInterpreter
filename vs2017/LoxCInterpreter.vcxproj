@@ -70,19 +70,24 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)..\bin\</OutDir>
-    <IntDir>$(SolutionDir)..\tmp\$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PlatformShortName)-$(Configuration)</TargetName>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration)-$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\tmp\$(Configuration)-$(Platform)\</IntDir>
+    <TargetName>clox</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)..\bin\</OutDir>
-    <IntDir>$(SolutionDir)..\tmp\$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PlatformShortName)-$(Configuration)</TargetName>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration)-$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\tmp\$(Configuration)-$(Platform)\</IntDir>
+    <TargetName>clox</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)..\bin\</OutDir>
-    <IntDir>$(SolutionDir)..\tmp\$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PlatformShortName)-$(Configuration)</TargetName>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration)-$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\tmp\$(Configuration)-$(Platform)\</IntDir>
+    <TargetName>clox</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>clox</TargetName>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration)-$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\tmp\$(Configuration)-$(Platform)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
