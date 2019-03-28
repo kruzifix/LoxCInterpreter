@@ -169,16 +169,16 @@ static void init_compiler(compiler_t* compiler)
     current = compiler;
 }
 
-static void end_compiler(void)
+static void end_compiler(bool printCode)
 {
     emit_return();
 
-#ifdef DEBUG_PRINT_CODE
-    if (!parser.had_error)
+//#ifdef DEBUG_PRINT_CODE
+    if (printCode && !parser.had_error)
     {
         disassemble_chunk(current_chunk(), "code");
     }
-#endif
+//#endif
 }
 
 static void begin_scope(void)
@@ -190,13 +190,17 @@ static void end_scope(void)
 {
     --current->scope_depth;
 
+    int n = 0;
+
     while (current->local_count > 0 &&
         current->locals[current->local_count - 1].depth > current->scope_depth)
     {
-        // TODO: add optimization with OP_POPN instruction!
-        emit_byte(OP_POP);
+        ++n;
         --current->local_count;
     }
+
+    if (n > 0)
+        emit_bytes(OP_POPN, (uint8_t)n);
 }
 
 static void expression(void);
@@ -587,7 +591,7 @@ static void statement(void)
     }
 }
 
-bool compile(const char* source, chunk_t* chunk)
+bool compile(const char* source, chunk_t* chunk, bool printCode)
 {
     init_scanner(source);
     compiler_t compiler;
@@ -603,6 +607,6 @@ bool compile(const char* source, chunk_t* chunk)
         declaration();
     }
 
-    end_compiler();
+    end_compiler(printCode);
     return !parser.had_error;
 }

@@ -7,6 +7,12 @@
 
 #define STACK_MAX 256
 
+typedef struct {
+    const char* file_path;
+    bool trace_execution;
+    bool print_disassembly;
+} interpreter_params_t;
+
 typedef enum {
     INTERPRET_OK,
     INTERPRET_COMPILE_ERROR,
@@ -33,7 +39,7 @@ extern vm_t vm;
 void init_vm(void);
 void free_vm(void);
 
-interpret_result_t interpret(const char* source);
+interpret_result_t interpret(const char* source, interpreter_params_t* params);
 
 void push(value_t value);
 value_t pop(void);

@@ -76,7 +76,7 @@ static void concatenate()
     push(OBJ_VAL(result));
 }
 
-static interpret_result_t run(void)
+static interpret_result_t run(bool traceExecution)
 {
 #define READ_BYTE() (*(vm.ip++))
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
@@ -104,17 +104,20 @@ static interpret_result_t run(void)
 
     for (;;)
     {
-#ifdef DEBUG_TRACE_EXECUTION
-        printf("          ");
-        for (value_t* slot = vm.stack; slot < vm.stack_top; slot++)
+//#ifdef DEBUG_TRACE_EXECUTION
+        if (traceExecution)
         {
-            printf("[ ");
-            print_value(*slot);
-            printf(" ]");
+            printf("          ");
+            for (value_t* slot = vm.stack; slot < vm.stack_top; slot++)
+            {
+                printf("[ ");
+                print_value(*slot);
+                printf(" ]");
+            }
+            printf("\n");
+            disassemble_instruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
         }
-        printf("\n");
-        disassemble_instruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
-#endif
+//#endif
 
         uint8_t instruction;
         switch (instruction = READ_BYTE())
@@ -135,6 +138,12 @@ static interpret_result_t run(void)
         case OP_TRUE: push(BOOL_VAL(true)); break;
         case OP_FALSE: push(BOOL_VAL(false)); break;
         case OP_POP: pop(); break;
+
+        case OP_POPN: {
+            uint8_t n = READ_BYTE();
+            vm.stack_top -= n;
+            break;
+        }
 
         case OP_GET_LOCAL: {
             uint8_t slot = READ_BYTE();
@@ -263,12 +272,12 @@ static interpret_result_t run(void)
 #undef BINARY_OP
 }
 
-interpret_result_t interpret(const char* source)
+interpret_result_t interpret(const char* source, interpreter_params_t* params)
 {
     chunk_t chunk;
     init_chunk(&chunk);
 
-    if (!compile(source, &chunk))
+    if (!compile(source, &chunk, params->print_disassembly))
     {
         free_chunk(&chunk);
         return INTERPRET_COMPILE_ERROR;
@@ -277,7 +286,7 @@ interpret_result_t interpret(const char* source)
     vm.chunk = &chunk;
     vm.ip = vm.chunk->code;
 
-    interpret_result_t result = run();
+    interpret_result_t result = run(params->trace_execution);
 
     free_chunk(&chunk);
     return result;
