@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -46,7 +47,7 @@ typedef struct {
 typedef struct {
     local_t locals[UINT8_COUNT];
     int local_count;
-    int scopeDepth;
+    int scope_depth;
 } compiler_t;
 
 parser_t parser;
@@ -164,7 +165,7 @@ static void emit_constant(value_t value)
 static void init_compiler(compiler_t* compiler)
 {
     compiler->local_count = 0;
-    compiler->scopeDepth = 0;
+    compiler->scope_depth = 0;
     current = compiler;
 }
 
@@ -178,6 +179,24 @@ static void end_compiler(void)
         disassemble_chunk(current_chunk(), "code");
     }
 #endif
+}
+
+static void begin_scope(void)
+{
+    ++current->scope_depth;
+}
+
+static void end_scope(void)
+{
+    --current->scope_depth;
+
+    while (current->local_count > 0 &&
+        current->locals[current->local_count - 1].depth > current->scope_depth)
+    {
+        // TODO: add optimization with OP_POPN instruction!
+        emit_byte(OP_POP);
+        --current->local_count;
+    }
 }
 
 static void expression(void);
@@ -244,16 +263,28 @@ static void string(bool canAssign)
 
 static void named_variable(token_t name, bool canAssign)
 {
-    int arg = identifier_constant(&name);
+    int arg = resolve_local(current, &name);
+    bool local = true;
+    if (arg == -1)
+    {
+        arg = identifier_constant(&name);
+        local = false;
+    }
 
     if (canAssign && match(TOKEN_EQUAL))
     {
         expression();
-        emit_with_arg(OP_SET_GLOBAL, OP_SET_GLOBAL_LONG, arg);
+        if (local)
+            emit_bytes(OP_SET_LOCAL, (uint8_t)arg);
+        else
+            emit_with_arg(OP_SET_GLOBAL, OP_SET_GLOBAL_LONG, arg);
     }
     else
     {
-        emit_with_arg(OP_GET_GLOBAL, OP_GET_GLOBAL_LONG, arg);
+        if (local)
+            emit_bytes(OP_GET_LOCAL, (uint8_t)arg);
+        else
+            emit_with_arg(OP_GET_GLOBAL, OP_GET_GLOBAL_LONG, arg);
     }
 }
 
@@ -361,14 +392,90 @@ static int identifier_constant(token_t* token)
     return make_constant(OBJ_VAL(copy_string(token->start, token->length)));
 }
 
+static bool identifier_equals(token_t* a, token_t* b)
+{
+    if (a->length != b->length)
+        return false;
+    return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static int resolve_local(compiler_t* compiler, token_t* name)
+{
+    for (int i = compiler->local_count - 1; i >= 0; --i)
+    {
+        local_t* local = compiler->locals + i;
+        if (identifier_equals(name, &local->name))
+        {
+            if (local->depth == -1)
+            {
+                error("Cannot read local variable in its own initializer.");
+            }
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void add_local(token_t name)
+{
+    if (current->local_count == UINT8_COUNT)
+    {
+        error("Too many local variables in function.");
+        return;
+    }
+
+    local_t* local = current->locals + current->local_count++;
+    local->name = name;
+    local->depth = -1;
+}
+
+static void declare_variable(void)
+{
+    if (current->scope_depth == 0)
+        return;
+
+    token_t* name = &parser.previous;
+    for (int i = current->local_count - 1; i >= 0; --i)
+    {
+        local_t* local = current->locals + i;
+        if (local->depth != -1 && local->depth < current->scope_depth)
+            break;
+        if (identifier_equals(name, &local->name))
+        {
+            error("Variable with this name already declared in this scope.");
+        }
+    }
+
+    add_local(*name);
+}
+
 static int parse_variable(const char* errorMessage)
 {
     consume(TOKEN_IDENTIFIER, errorMessage);
+
+    declare_variable();
+    if (current->scope_depth > 0)
+        return 0;
+
     return identifier_constant(&parser.previous);
+}
+
+static void mark_initialized(void)
+{
+    if (current->scope_depth == 0)
+        return;
+    current->locals[current->local_count - 1].depth = current->scope_depth;
+
 }
 
 static void define_variable(int global)
 {
+    if (current->scope_depth > 0)
+    {
+        mark_initialized();
+        return;
+    }
+
     emit_with_arg(OP_DEFINE_GLOBAL, OP_DEFINE_GLOBAL_LONG, global);
 }
 
@@ -451,11 +558,27 @@ static void declaration(void)
     if (parser.panic_mode) synchronize();
 }
 
+static void block(void)
+{
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF))
+    {
+        declaration();
+    }
+
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+}
+
 static void statement(void)
 {
     if (match(TOKEN_PRINT))
     {
         print_statement();
+    }
+    else if (match(TOKEN_LEFT_BRACE))
+    {
+        begin_scope();
+        block();
+        end_scope();
     }
     else
     {
