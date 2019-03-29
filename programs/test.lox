@@ -1,11 +1,20 @@
 
-var cond = false;
+var x = 15;
 
-if (cond)
+if (x < 3)
 {
-    print "true";
+    print "x < 3";
 }
-else
+
+print "middle";
+
+if (x > 4)
 {
-    print "false";
+    print "x > 4";
+
+    if (x > 10)
+        print "x > 10";
+
 }
+
+print "end";

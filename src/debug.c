@@ -46,6 +46,15 @@ static int byte_instruction(const char* name, chunk_t* chunk, int offset)
     return offset + 2;
 }
 
+static int multi_byte_instruction(const char* name, chunk_t* chunk, int offset)
+{
+    int value = (chunk->code[offset + 1] << 16) |
+        (chunk->code[offset + 2] << 8) |
+        (chunk->code[offset + 3]);
+    printf("%-16s\t%4d\n", name, value);
+    return offset + 4;
+}
+
 int disassemble_instruction(chunk_t* chunk, int offset)
 {
     printf("%04d ", offset);
@@ -90,6 +99,8 @@ int disassemble_instruction(chunk_t* chunk, int offset)
         return constant_instruction("OP_SET_GLOBAL", chunk, offset);
     case OP_SET_GLOBAL_LONG:
         return constant_long_instruction("OP_SET_GLOBAL_LONG", chunk, offset);
+    case OP_JUMP_FALSE:
+        return multi_byte_instruction("OP_JUMP_FALSE", chunk, offset);
     case OP_EQUAL:
         return simple_instruction("OP_EQUAL", offset);
     case OP_GREATER:

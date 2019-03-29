@@ -325,6 +325,26 @@ static void unary(bool canAssign)
     }
 }
 
+static void if_statement(void)
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after if.");
+
+    expression();
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after if condition.");
+
+    int jmpInstructionPos = current_chunk()->count;
+    emit_bytes(OP_JUMP_FALSE, 0);
+    emit_bytes(0, 0);
+
+    statement();
+
+    int jmpTarget = current_chunk()->count;
+    current_chunk()->code[jmpInstructionPos + 1] = (jmpTarget >> 16) & 0xFF;
+    current_chunk()->code[jmpInstructionPos + 2] = (jmpTarget >> 8) & 0xFF;
+    current_chunk()->code[jmpInstructionPos + 3] = jmpTarget & 0xFF;
+}
+
 parse_rule_t rules[] = {
     { grouping, NULL,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
@@ -351,17 +371,17 @@ parse_rule_t rules[] = {
     { NULL,     NULL,    PREC_AND },        // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
-    { literal,     NULL,    PREC_NONE },    // TOKEN_FALSE
+    { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
-    { literal,     NULL,    PREC_NONE },    // TOKEN_NIL
+    { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
     { NULL,     NULL,    PREC_OR },         // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
     { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
-    { literal,     NULL,    PREC_NONE },    // TOKEN_TRUE
+    { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
@@ -592,6 +612,10 @@ static void statement(void)
         begin_scope();
         block();
         end_scope();
+    }
+    else if (match(TOKEN_IF))
+    {
+        if_statement();
     }
     else
     {
