@@ -101,6 +101,8 @@ int disassemble_instruction(chunk_t* chunk, int offset)
         return constant_long_instruction("OP_SET_GLOBAL_LONG", chunk, offset);
     case OP_JUMP_FALSE:
         return multi_byte_instruction("OP_JUMP_FALSE", chunk, offset);
+    case OP_JUMP:
+        return multi_byte_instruction("OP_JUMP", chunk, offset);
     case OP_EQUAL:
         return simple_instruction("OP_EQUAL", offset);
     case OP_GREATER:

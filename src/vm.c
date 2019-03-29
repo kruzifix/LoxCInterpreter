@@ -228,6 +228,15 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
 
+        case OP_JUMP: {
+            int jmpTarget = READ_BYTE() << 16;
+            jmpTarget |= READ_BYTE() << 8;
+            jmpTarget |= READ_BYTE();
+
+            vm.ip = vm.chunk->code + jmpTarget;
+            break;
+        }
+
         case OP_EQUAL: {
             value_t a = pop();
             value_t b = pop();

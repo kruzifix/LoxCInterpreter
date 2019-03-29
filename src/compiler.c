@@ -333,16 +333,32 @@ static void if_statement(void)
 
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after if condition.");
 
-    int jmpInstructionPos = current_chunk()->count;
+    int conditionalJumpPos = current_chunk()->count;
     emit_bytes(OP_JUMP_FALSE, 0);
     emit_bytes(0, 0);
 
     statement();
 
-    int jmpTarget = current_chunk()->count;
-    current_chunk()->code[jmpInstructionPos + 1] = (jmpTarget >> 16) & 0xFF;
-    current_chunk()->code[jmpInstructionPos + 2] = (jmpTarget >> 8) & 0xFF;
-    current_chunk()->code[jmpInstructionPos + 3] = jmpTarget & 0xFF;
+    int conditionalJumpTarget = current_chunk()->count;
+    if (match(TOKEN_ELSE))
+    {
+        // insert unconditional jump after if block to end of else block
+        int skipElseJumpPos = current_chunk()->count;
+        emit_bytes(OP_JUMP, 0);
+        emit_bytes(0, 0);
+        conditionalJumpTarget = current_chunk()->count;
+
+        statement();
+
+        int skipElseJumpTarget = current_chunk()->count;
+        current_chunk()->code[skipElseJumpPos + 1] = (skipElseJumpTarget >> 16) & 0xFF;
+        current_chunk()->code[skipElseJumpPos + 2] = (skipElseJumpTarget >> 8) & 0xFF;
+        current_chunk()->code[skipElseJumpPos + 3] = skipElseJumpTarget & 0xFF;
+    }
+    current_chunk()->code[conditionalJumpPos + 1] = (conditionalJumpTarget >> 16) & 0xFF;
+    current_chunk()->code[conditionalJumpPos + 2] = (conditionalJumpTarget >> 8) & 0xFF;
+    current_chunk()->code[conditionalJumpPos + 3] = conditionalJumpTarget & 0xFF;
+
 }
 
 parse_rule_t rules[] = {

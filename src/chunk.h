@@ -19,6 +19,7 @@ typedef enum {
     OP_SET_LOCAL,
     OP_SET_GLOBAL,
     OP_SET_GLOBAL_LONG,
+    OP_JUMP,
     OP_JUMP_FALSE,
     OP_EQUAL,
     OP_GREATER,
