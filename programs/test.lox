@@ -1,24 +1,11 @@
-var love = "anna";
 
+var cond = false;
+
+if (cond)
 {
-    var test = 1;
-    var x = 5;
-
-    var bla = x + test * x;
-
-    {
-        var asdf = bla + x - test;
-
-        print asdf;
-
-        var x = bla + 3;
-
-        print x;
-    }
-
-    print x;
-
-    print bla;
+    print "true";
 }
-
-print love;
+else
+{
+    print "false";
+}
