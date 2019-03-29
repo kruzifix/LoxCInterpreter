@@ -15,14 +15,12 @@ typedef enum {
     OBJ_STRING
 } obj_type_t;
 
-struct sobj_t
-{
+struct sobj_t {
     obj_type_t type;
     struct sobj_t* next;
 };
 
-struct sobj_string_t
-{
+struct sobj_string_t {
     obj_t obj;
     int length;
     char* chars;
@@ -36,7 +34,7 @@ void print_object(value_t value);
 
 static inline bool is_obj_type(value_t value, obj_type_t type)
 {
-    return IS_OBJ(value) && AS_OBJ(value)->type == type;
+    return IS_OBJ(value) && OBJ_TYPE(value) == type;
 }
 
 #endif
