@@ -325,42 +325,6 @@ static void unary(bool canAssign)
     }
 }
 
-static void if_statement(void)
-{
-    consume(TOKEN_LEFT_PAREN, "Expect '(' after if.");
-
-    expression();
-
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after if condition.");
-
-    int conditionalJumpPos = current_chunk()->count;
-    emit_bytes(OP_JUMP_FALSE, 0);
-    emit_bytes(0, 0);
-
-    statement();
-
-    int conditionalJumpTarget = current_chunk()->count;
-    if (match(TOKEN_ELSE))
-    {
-        // insert unconditional jump after if block to end of else block
-        int skipElseJumpPos = current_chunk()->count;
-        emit_bytes(OP_JUMP, 0);
-        emit_bytes(0, 0);
-        conditionalJumpTarget = current_chunk()->count;
-
-        statement();
-
-        int skipElseJumpTarget = current_chunk()->count;
-        current_chunk()->code[skipElseJumpPos + 1] = (skipElseJumpTarget >> 16) & 0xFF;
-        current_chunk()->code[skipElseJumpPos + 2] = (skipElseJumpTarget >> 8) & 0xFF;
-        current_chunk()->code[skipElseJumpPos + 3] = skipElseJumpTarget & 0xFF;
-    }
-    current_chunk()->code[conditionalJumpPos + 1] = (conditionalJumpTarget >> 16) & 0xFF;
-    current_chunk()->code[conditionalJumpPos + 2] = (conditionalJumpTarget >> 8) & 0xFF;
-    current_chunk()->code[conditionalJumpPos + 3] = conditionalJumpTarget & 0xFF;
-
-}
-
 parse_rule_t rules[] = {
     { grouping, NULL,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
@@ -617,6 +581,68 @@ static void block(void)
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
+static void if_statement(void)
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after if.");
+
+    expression();
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after if condition.");
+
+    int conditionalJumpPos = current_chunk()->count;
+    emit_bytes(OP_JUMP_FALSE, 0);
+    emit_bytes(0, 0);
+
+    statement();
+
+    int conditionalJumpTarget = current_chunk()->count;
+    if (match(TOKEN_ELSE))
+    {
+        // insert unconditional jump after if block to end of else block
+        int skipElseJumpPos = current_chunk()->count;
+        emit_bytes(OP_JUMP, 0);
+        emit_bytes(0, 0);
+        conditionalJumpTarget = current_chunk()->count;
+
+        statement();
+
+        int skipElseJumpTarget = current_chunk()->count;
+        current_chunk()->code[skipElseJumpPos + 1] = (skipElseJumpTarget >> 16) & 0xFF;
+        current_chunk()->code[skipElseJumpPos + 2] = (skipElseJumpTarget >> 8) & 0xFF;
+        current_chunk()->code[skipElseJumpPos + 3] = skipElseJumpTarget & 0xFF;
+    }
+    current_chunk()->code[conditionalJumpPos + 1] = (conditionalJumpTarget >> 16) & 0xFF;
+    current_chunk()->code[conditionalJumpPos + 2] = (conditionalJumpTarget >> 8) & 0xFF;
+    current_chunk()->code[conditionalJumpPos + 3] = conditionalJumpTarget & 0xFF;
+}
+
+static void while_statement(void)
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after while.");
+
+    int conditionPos = current_chunk()->count;
+
+    expression();
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after while condition.");
+
+    int endJumpPos = current_chunk()->count;
+    emit_bytes(OP_JUMP_FALSE, 0);
+    emit_bytes(0, 0);
+
+    statement();
+
+    // insert unconditional jump back to condition expression
+    emit_bytes(OP_JUMP, (conditionPos >> 16) & 0xFF);
+    emit_bytes((conditionPos >> 8) & 0xFF, conditionPos & 0xFF);
+
+    int endJumpTarget = current_chunk()->count;
+
+    current_chunk()->code[endJumpPos + 1] = (endJumpTarget >> 16) & 0xFF;
+    current_chunk()->code[endJumpPos + 2] = (endJumpTarget >> 8) & 0xFF;
+    current_chunk()->code[endJumpPos + 3] = endJumpTarget & 0xFF;
+}
+
 static void statement(void)
 {
     if (match(TOKEN_PRINT))
@@ -632,6 +658,10 @@ static void statement(void)
     else if (match(TOKEN_IF))
     {
         if_statement();
+    }
+    else if (match(TOKEN_WHILE))
+    {
+        while_statement();
     }
     else
     {
