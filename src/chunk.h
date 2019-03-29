@@ -5,34 +5,37 @@
 #include "value.h"
 
 typedef enum {
-    OP_CONSTANT,
-    OP_NIL,
-    OP_TRUE,
+    // 1 byte
+    OP_ADD,
+    OP_DIVIDE,
     OP_FALSE,
-    OP_POP,
-    OP_POPN,
-    OP_GET_LOCAL,
-    OP_GET_GLOBAL,
-    OP_GET_GLOBAL_LONG,
-    OP_DEFINE_GLOBAL,
-    OP_DEFINE_GLOBAL_LONG,
-    OP_SET_LOCAL,
-    OP_SET_GLOBAL,
-    OP_SET_GLOBAL_LONG,
-    OP_JUMP,
-    OP_JUMP_FALSE,
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
-    OP_CONSTANT_LONG,
-    OP_ADD,
     OP_SUBTRACT,
     OP_MULTIPLY,
-    OP_DIVIDE,
-    OP_NOT,
     OP_NEGATE,
+    OP_NIL,
+    OP_NOT,
+    OP_POP,
     OP_PRINT,
-    OP_RETURN
+    OP_RETURN,
+    OP_TRUE,
+    // 2 byte
+    OP_POPN,
+    OP_CONSTANT,
+    OP_GET_GLOBAL,
+    OP_GET_LOCAL,
+    OP_SET_GLOBAL,
+    OP_SET_LOCAL,
+    OP_DEFINE_GLOBAL,
+    // 4 byte
+    OP_CONSTANT_LONG,
+    OP_GET_GLOBAL_LONG,
+    OP_DEFINE_GLOBAL_LONG,
+    OP_SET_GLOBAL_LONG,
+    OP_JUMP,
+    OP_JUMP_FALSE,
 } opcode_t;
 
 typedef struct {
@@ -49,5 +52,8 @@ void write_chunk(chunk_t* chunk, uint8_t byte, int line);
 void write_constant(chunk_t* chunk, value_t value, int line);
 
 int add_constant(chunk_t* chunk, value_t value);
+
+// appends 'other' to 'chunk'
+void append_chunk(chunk_t* chunk, chunk_t* other);
 
 #endif

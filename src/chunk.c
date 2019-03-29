@@ -67,3 +67,121 @@ int add_constant(chunk_t* chunk, value_t value)
     write_value_array(&chunk->constants, value);
     return chunk->constants.count - 1;
 }
+
+static uint8_t op_short_to_long(uint8_t op)
+{
+    switch (op)
+    {
+    case OP_CONSTANT: return OP_CONSTANT_LONG;
+    case OP_GET_GLOBAL: return OP_GET_GLOBAL_LONG;
+    case OP_SET_GLOBAL: return OP_SET_GLOBAL_LONG;
+    case OP_DEFINE_GLOBAL: return OP_DEFINE_GLOBAL_LONG;
+    default: return 0;
+    }
+}
+
+static uint8_t op_long_to_short(uint8_t op)
+{
+    switch (op)
+    {
+    case OP_CONSTANT_LONG: return OP_CONSTANT;
+    case OP_GET_GLOBAL_LONG: return OP_GET_GLOBAL;
+    case OP_SET_GLOBAL_LONG: return OP_SET_GLOBAL;
+    case OP_DEFINE_GLOBAL_LONG: return OP_DEFINE_GLOBAL;
+    default: return 0;
+    }
+}
+
+void append_chunk(chunk_t* chunk, chunk_t* other)
+{
+    int* constantMapping = ALLOCATE(int, other->constants.count);
+    // copy constants
+    for (int i = 0; i < other->constants.count; ++i)
+    {
+        constantMapping[i] = add_constant(chunk, other->constants.values[i]);
+    }
+
+    for (int i = 0; i < other->count; ++i)
+    {
+#define APPEND() write_chunk(chunk, other->code[i], other->lines[i])
+
+        uint8_t op = other->code[i];
+
+        switch (op)
+        {
+            // 2 byte
+        case OP_CONSTANT:
+        case OP_GET_GLOBAL:
+        case OP_SET_GLOBAL:
+        case OP_DEFINE_GLOBAL: {
+            // obacht!! 2 byte instructions could expand to 4 byte!!
+            // in case of constant index grows over 256!!!
+            int oldIndex = other->code[i + 1];
+            int newIndex = constantMapping[oldIndex];
+            if (newIndex <= 0xFF)
+            {
+                APPEND();
+                ++i;
+                write_chunk(chunk, newIndex & 0xFF, other->lines[i]);
+            }
+            else
+            {
+                write_chunk(chunk, op_short_to_long(op), other->lines[i]);
+                ++i;
+                write_chunk(chunk, (newIndex >> 16) & 0xFF, other->lines[i]);
+                write_chunk(chunk, (newIndex >> 8) & 0xFF, other->lines[i]);
+                write_chunk(chunk, newIndex & 0xFF, other->lines[i]);
+            }
+            break;
+        }
+        case OP_SET_LOCAL:
+        case OP_GET_LOCAL:
+        case OP_POPN:
+            APPEND(); APPEND();
+            break;
+            // 4 byte
+        case OP_CONSTANT_LONG:
+        case OP_GET_GLOBAL_LONG:
+        case OP_DEFINE_GLOBAL_LONG:
+        case OP_SET_GLOBAL_LONG: {
+            // obacht, could morph to 2 byte instruction!
+            int oldIndex = other->code[i + 1];
+            int newIndex = constantMapping[oldIndex];
+
+            if (newIndex <= 0xFF)
+            {
+                write_chunk(chunk, op_short_to_long(op), other->lines[i]);
+                ++i;
+                write_chunk(chunk, newIndex & 0xFF, other->lines[i]);
+                ++i; ++i;
+            }
+            else
+            {
+                APPEND();
+                ++i;
+                write_chunk(chunk, (newIndex >> 16) & 0xFF, other->lines[i]);
+                ++i;
+                write_chunk(chunk, (newIndex >> 8) & 0xFF, other->lines[i]);
+                ++i;
+                write_chunk(chunk, newIndex & 0xFF, other->lines[i]);
+            }
+            break;
+        }
+        case OP_JUMP:
+        case OP_JUMP_FALSE: {
+            APPEND(); ++i;
+            APPEND(); ++i;
+            APPEND(); ++i;
+            APPEND();
+            break;
+        }
+            // 1 byte
+        default:
+            APPEND();
+            break;
+        }
+#undef APPEND
+    }
+
+    FREE_ARRAY(int, constantMapping, other->constants.count);
+}

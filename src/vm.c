@@ -122,128 +122,17 @@ static interpret_result_t run(bool traceExecution)
         uint8_t instruction;
         switch (instruction = READ_BYTE())
         {
-        case OP_CONSTANT: {
-            value_t constant = READ_CONSTANT();
-            push(constant);
-            break;
-        }
-
-        case OP_CONSTANT_LONG: {
-            CONSTANT_LONG(constant);
-            push(constant);
-            break;
-        }
-
+    // 1 byte -----------------------------------
         case OP_NIL: push(NIL_VAL); break;
         case OP_TRUE: push(BOOL_VAL(true)); break;
         case OP_FALSE: push(BOOL_VAL(false)); break;
         case OP_POP: pop(); break;
-
-        case OP_POPN: {
-            uint8_t n = READ_BYTE();
-            vm.stack_top -= n;
-            break;
-        }
-
-        case OP_GET_LOCAL: {
-            uint8_t slot = READ_BYTE();
-            push(vm.stack[slot]);
-            break;
-        }
-
-        case OP_GET_GLOBAL: {
-            obj_string_t* name = READ_STRING();
-            value_t value;
-            if (!table_get(&vm.globals, name, &value))
-            {
-                runtime_error("Undefined variable '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
-            }
-            push(value);
-            break;
-        }
-
-        case OP_GET_GLOBAL_LONG: {
-            STRING_LONG(name);
-            value_t value;
-            if (!table_get(&vm.globals, name, &value))
-            {
-                runtime_error("Undefined variable '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
-            }
-            push(value);
-            break;
-        }
-
-        case OP_DEFINE_GLOBAL: {
-            obj_string_t* name = READ_STRING();
-            table_set(&vm.globals, name, peek(0));
-            pop();
-            break;
-        }
-
-        case OP_DEFINE_GLOBAL_LONG: {
-            STRING_LONG(name);
-            table_set(&vm.globals, name, peek(0));
-            pop();
-            break;
-        }
-
-        case OP_SET_LOCAL: {
-            uint8_t slot = READ_BYTE();
-            vm.stack[slot] = peek(0);
-            break;
-        }
-
-        case OP_SET_GLOBAL: {
-            obj_string_t* name = READ_STRING();
-            if (table_set(&vm.globals, name, peek(0)))
-            {
-                runtime_error("Undefined variable '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
-            }
-            break;
-        }
-
-        case OP_SET_GLOBAL_LONG: {
-            STRING_LONG(name);
-            if (table_set(&vm.globals, name, peek(0)))
-            {
-                runtime_error("Undefined variable '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
-            }
-            break;
-        }
-
-        case OP_JUMP_FALSE: {
-            int jmpTarget = READ_BYTE() << 16;
-            jmpTarget |= READ_BYTE() << 8;
-            jmpTarget |= READ_BYTE();
-
-            value_t cond = pop();
-            if (isFalsey(cond))
-            {
-                vm.ip = vm.chunk->code + jmpTarget;
-            }
-            break;
-        }
-
-        case OP_JUMP: {
-            int jmpTarget = READ_BYTE() << 16;
-            jmpTarget |= READ_BYTE() << 8;
-            jmpTarget |= READ_BYTE();
-
-            vm.ip = vm.chunk->code + jmpTarget;
-            break;
-        }
-
         case OP_EQUAL: {
             value_t a = pop();
             value_t b = pop();
             push(BOOL_VAL(values_equal(a, b)));
             break;
         }
-
         case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;
         case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
         case OP_ADD: {
@@ -268,7 +157,7 @@ static interpret_result_t run(bool traceExecution)
         case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
         case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;
         case OP_NOT: push(BOOL_VAL(isFalsey(pop()))); break;
-        case OP_NEGATE:
+        case OP_NEGATE: {
             if (!IS_NUMBER(peek(0)))
             {
                 runtime_error("Operand must be a number.");
@@ -276,7 +165,7 @@ static interpret_result_t run(bool traceExecution)
             }
             push(NUMBER_VAL(-AS_NUMBER(pop())));
             break;
-
+        }
         case OP_PRINT: {
             print_value(pop());
             printf("\n");
@@ -285,6 +174,107 @@ static interpret_result_t run(bool traceExecution)
         case OP_RETURN: {
             return INTERPRET_OK;
         }
+
+    // 2 byte ----------------------------------
+        case OP_CONSTANT: {
+            value_t constant = READ_CONSTANT();
+            push(constant);
+            break;
+        }
+        case OP_DEFINE_GLOBAL: {
+            obj_string_t* name = READ_STRING();
+            table_set(&vm.globals, name, peek(0));
+            pop();
+            break;
+        }
+        case OP_POPN: {
+            uint8_t n = READ_BYTE();
+            vm.stack_top -= n;
+            break;
+        }
+        case OP_GET_LOCAL: {
+            uint8_t slot = READ_BYTE();
+            push(vm.stack[slot]);
+            break;
+        }
+        case OP_GET_GLOBAL: {
+            obj_string_t* name = READ_STRING();
+            value_t value;
+            if (!table_get(&vm.globals, name, &value))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
+        case OP_SET_LOCAL: {
+            uint8_t slot = READ_BYTE();
+            vm.stack[slot] = peek(0);
+            break;
+        }
+        case OP_SET_GLOBAL: {
+            obj_string_t* name = READ_STRING();
+            if (table_set(&vm.globals, name, peek(0)))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+
+    // 4 byte --------------------------------
+        case OP_GET_GLOBAL_LONG: {
+            STRING_LONG(name);
+            value_t value;
+            if (!table_get(&vm.globals, name, &value))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
+        case OP_CONSTANT_LONG: {
+            CONSTANT_LONG(constant);
+            push(constant);
+            break;
+        }
+        case OP_DEFINE_GLOBAL_LONG: {
+            STRING_LONG(name);
+            table_set(&vm.globals, name, peek(0));
+            pop();
+            break;
+        }
+        case OP_SET_GLOBAL_LONG: {
+            STRING_LONG(name);
+            if (table_set(&vm.globals, name, peek(0)))
+            {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+        case OP_JUMP: {
+            int jmpTarget = READ_BYTE() << 16;
+            jmpTarget |= READ_BYTE() << 8;
+            jmpTarget |= READ_BYTE();
+
+            vm.ip = vm.chunk->code + jmpTarget;
+            break;
+        }
+        case OP_JUMP_FALSE: {
+            int jmpTarget = READ_BYTE() << 16;
+            jmpTarget |= READ_BYTE() << 8;
+            jmpTarget |= READ_BYTE();
+
+            value_t cond = pop();
+            if (isFalsey(cond))
+            {
+                vm.ip = vm.chunk->code + jmpTarget;
+            }
+            break;
+        }
         }
     }
 
@@ -292,6 +282,9 @@ static interpret_result_t run(bool traceExecution)
 #undef READ_CONSTANT
 #undef READ_STRING
 #undef BINARY_OP
+
+#undef CONSTANT_LONG
+#undef STRING_LONG
 }
 
 interpret_result_t interpret(const char* source, interpreter_params_t* params)

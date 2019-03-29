@@ -643,6 +643,60 @@ static void while_statement(void)
     current_chunk()->code[endJumpPos + 3] = endJumpTarget & 0xFF;
 }
 
+static void for_statement(void)
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after for.");
+
+    begin_scope();
+
+    // init statement
+    expression();
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after initial statement.");
+
+    // condition
+    int conditionPos = current_chunk()->count;
+    expression();
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after for condition.");
+
+    // post-loop statement
+    // capture post-loop statement in temp chunk
+    chunk_t tempChunk;
+    init_chunk(&tempChunk);
+
+    chunk_t* oldChunk = current_chunk();
+    compiling_chunk = &tempChunk;
+
+    expression();
+
+    compiling_chunk = oldChunk;
+
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after for statement.");
+
+    int endJumpPos = current_chunk()->count;
+    emit_bytes(OP_JUMP_FALSE, 0);
+    emit_bytes(0, 0);
+
+    statement();
+
+    // put post-loop statement here!
+    append_chunk(compiling_chunk, &tempChunk);
+
+    free_chunk(&tempChunk);
+
+    // insert unconditional jump back to condition expression
+    emit_bytes(OP_JUMP, (conditionPos >> 16) & 0xFF);
+    emit_bytes((conditionPos >> 8) & 0xFF, conditionPos & 0xFF);
+
+    int endJumpTarget = current_chunk()->count;
+
+    current_chunk()->code[endJumpPos + 1] = (endJumpTarget >> 16) & 0xFF;
+    current_chunk()->code[endJumpPos + 2] = (endJumpTarget >> 8) & 0xFF;
+    current_chunk()->code[endJumpPos + 3] = endJumpTarget & 0xFF;
+}
+
 static void statement(void)
 {
     if (match(TOKEN_PRINT))
@@ -662,6 +716,10 @@ static void statement(void)
     else if (match(TOKEN_WHILE))
     {
         while_statement();
+    }
+    else if (match(TOKEN_FOR))
+    {
+        for_statement();
     }
     else
     {
