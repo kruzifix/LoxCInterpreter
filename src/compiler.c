@@ -154,7 +154,15 @@ static void emit_return(void)
 
 static int make_constant(value_t value)
 {
-    return add_constant(current_chunk(), value);
+    int arg = add_constant(current_chunk(), value);
+
+    if (arg > 0xFFFFFF)
+    {
+        error("Too many constants in chunk.");
+        return 0;
+    }
+
+    return arg;
 }
 
 static void emit_constant(value_t value)
