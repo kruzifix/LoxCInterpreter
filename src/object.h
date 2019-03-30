@@ -15,6 +15,8 @@ typedef enum {
     OBJ_STRING
 } obj_type_t;
 
+extern const char* OBJ_TYPE_STRING[];
+
 struct sobj_t {
     obj_type_t type;
     struct sobj_t* next;

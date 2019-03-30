@@ -13,6 +13,8 @@ typedef enum {
     VAL_OBJ
 } value_type_t;
 
+extern const char* VALUE_TYPE_STRING[];
+
 typedef struct {
     value_type_t type;
     union {

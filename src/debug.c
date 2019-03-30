@@ -2,10 +2,35 @@
 
 #include "debug.h"
 #include "value.h"
+#include "object.h"
 
 void disassemble_chunk(chunk_t* chunk, const char* name)
 {
     printf("=== %s ===\n", name);
+
+    printf("\n-- constants --\n");
+
+    for (int i = 0; i < chunk->constants.count; ++i)
+    {
+        value_t v = chunk->constants.values[i];
+
+        printf("%3d: %-8s", i, VALUE_TYPE_STRING[v.type]);
+
+        if (IS_OBJ(v))
+        {
+            printf("[%s]\t'", OBJ_TYPE_STRING[v.as.obj->type]);
+        }
+        else
+        {
+            printf("\t\t'");
+        }
+
+        print_value(v);
+
+        printf("'\n");
+    }
+
+    printf("\n\n");
 
     for (int i = 0; i < chunk->count;)
     {
@@ -16,7 +41,7 @@ void disassemble_chunk(chunk_t* chunk, const char* name)
 static int constant_instruction(const char* name, chunk_t* chunk, int offset)
 {
     uint8_t constant = chunk->code[offset + 1];
-    printf("%-16s\t%4d '", name, constant);
+    printf("%-16s %4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 2;
@@ -27,7 +52,7 @@ static int constant_long_instruction(const char* name, chunk_t* chunk, int offse
     int constant = (chunk->code[offset + 1] << 16) |
         (chunk->code[offset + 2] << 8) |
         (chunk->code[offset + 3]);
-    printf("%-16s\t%4d '", name, constant);
+    printf("%-16s %4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 4;
@@ -42,7 +67,7 @@ static int simple_instruction(const char* name, int offset)
 static int byte_instruction(const char* name, chunk_t* chunk, int offset)
 {
     uint8_t slot = chunk->code[offset + 1];
-    printf("%-16s\t%4d\n", name, slot);
+    printf("%-16s %4d\n", name, slot);
     return offset + 2;
 }
 
@@ -51,7 +76,7 @@ static int multi_byte_instruction(const char* name, chunk_t* chunk, int offset)
     int value = (chunk->code[offset + 1] << 16) |
         (chunk->code[offset + 2] << 8) |
         (chunk->code[offset + 3]);
-    printf("%-16s\t%4d\n", name, value);
+    printf("%-16s %4d\n", name, value);
     return offset + 4;
 }
 

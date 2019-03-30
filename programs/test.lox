@@ -1,4 +1,12 @@
-for (var i = 0; i < 10; i = i + 1)
+for (var i = 0; i < 2; i = i + 1)
 {
+    print "begin outer loop. i:";
+    print i;
+    for (var j = 0; j < 2; j = j + 1)
+    {
+        print "inner loop. j:";
+        print j;
+    }
+    print "end outer loop. i:";
     print i;
 }

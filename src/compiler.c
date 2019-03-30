@@ -680,6 +680,7 @@ static void for_statement(void)
         compiling_chunk = &tempChunk;
 
         expression();
+        emit_byte(OP_POP);
 
         compiling_chunk = oldChunk;
 
@@ -697,13 +698,13 @@ static void for_statement(void)
 
     free_chunk(&tempChunk);
 
-    end_scope();
-
     // insert unconditional jump back to condition expression
     emit_bytes(OP_JUMP, (conditionPos >> 16) & 0xFF);
     emit_bytes((conditionPos >> 8) & 0xFF, conditionPos & 0xFF);
 
     int endJumpTarget = current_chunk()->count;
+
+    end_scope();
 
     current_chunk()->code[endJumpPos + 1] = (endJumpTarget >> 16) & 0xFF;
     current_chunk()->code[endJumpPos + 2] = (endJumpTarget >> 8) & 0xFF;
