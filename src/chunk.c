@@ -94,6 +94,9 @@ static uint8_t op_long_to_short(uint8_t op)
 
 void append_chunk(chunk_t* chunk, chunk_t* other)
 {
+    if (other->count == 0)
+        return;
+
     int* constantMapping = ALLOCATE(int, other->constants.count);
     // copy constants
     for (int i = 0; i < other->constants.count; ++i)
@@ -137,7 +140,7 @@ void append_chunk(chunk_t* chunk, chunk_t* other)
         case OP_SET_LOCAL:
         case OP_GET_LOCAL:
         case OP_POPN:
-            APPEND(); APPEND();
+            APPEND(); ++i;  APPEND();
             break;
             // 4 byte
         case OP_CONSTANT_LONG:

@@ -649,31 +649,42 @@ static void for_statement(void)
 
     begin_scope();
 
-    // init statement
-    expression();
-
-    consume(TOKEN_SEMICOLON, "Expect ';' after initial statement.");
+    if (!match(TOKEN_SEMICOLON))
+    {
+        // init statement
+        declaration();
+    }
 
     // condition
     int conditionPos = current_chunk()->count;
-    expression();
+    if (match(TOKEN_SEMICOLON))
+    {
+        // TODO: refactor to unconditional jump!
+        emit_byte(OP_TRUE);
+    }
+    else
+    {
+        expression();
 
-    consume(TOKEN_SEMICOLON, "Expect ';' after for condition.");
+        consume(TOKEN_SEMICOLON, "Expect ';' after for condition.");
+    }
 
     // post-loop statement
     // capture post-loop statement in temp chunk
+
     chunk_t tempChunk;
     init_chunk(&tempChunk);
+    if (!match(TOKEN_RIGHT_PAREN))
+    {
+        chunk_t* oldChunk = current_chunk();
+        compiling_chunk = &tempChunk;
 
-    chunk_t* oldChunk = current_chunk();
-    compiling_chunk = &tempChunk;
+        expression();
 
-    expression();
+        compiling_chunk = oldChunk;
 
-    compiling_chunk = oldChunk;
-
-
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after for statement.");
+        consume(TOKEN_RIGHT_PAREN, "Expect ')' after for statement.");
+    }
 
     int endJumpPos = current_chunk()->count;
     emit_bytes(OP_JUMP_FALSE, 0);
@@ -685,6 +696,8 @@ static void for_statement(void)
     append_chunk(compiling_chunk, &tempChunk);
 
     free_chunk(&tempChunk);
+
+    end_scope();
 
     // insert unconditional jump back to condition expression
     emit_bytes(OP_JUMP, (conditionPos >> 16) & 0xFF);
