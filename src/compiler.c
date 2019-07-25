@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "compiler.h"
+#include "memory.h"
 #include "scanner.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -214,6 +215,8 @@ static void end_scope(void)
 static void expression(void);
 static void statement(void);
 static void declaration(void);
+static void block(void);
+
 static int identifier_constant(token_t* token);
 static int resolve_local(compiler_t* compiler, token_t* name);
 
@@ -325,8 +328,47 @@ static void unary(bool canAssign)
     }
 }
 
+static void method_call(bool canAssign)
+{
+
+    token_t* name = &parser.previous;
+    printf("calling method! with name %s\n", name->start);
+
+    int methodId = -1;
+    for (int i = 0; i < current_chunk()->constants.count; ++i)
+    {
+        value_t* val = current_chunk()->constants.values + i;
+        if (val->type == VAL_OBJ)
+        {
+            obj_t* obj = val->as.obj;
+            if (obj->type == OBJ_METHOD)
+            {
+                obj_method_t* method = (obj_method_t*)obj;
+                if (method->name->length != name->length)
+                    continue;
+                if (memcmp(method->name->chars, name->start, name->length) == 0)
+                {
+                    methodId = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (methodId == -1)
+    {
+        error("No method with name found.");
+        return;
+    }
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after method call arguments.");
+
+    // TODO: 
+    emit_bytes(OP_CALL, methodId);
+}
+
 parse_rule_t rules[] = {
-    { grouping, NULL,    PREC_CALL },       // TOKEN_LEFT_PAREN
+    { grouping, method_call,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
@@ -478,7 +520,6 @@ static void mark_initialized(void)
     if (current->scope_depth == 0)
         return;
     current->locals[current->local_count - 1].depth = current->scope_depth;
-
 }
 
 static void define_variable(int global)
@@ -519,6 +560,45 @@ static void var_declaration(void)
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
 
     define_variable(global);
+}
+
+static void method_declaration(void)
+{
+    consume(TOKEN_IDENTIFIER, "Expect method name.");
+
+    token_t* name = &parser.previous;
+    const char* nameStart = name->start;
+    int nameLength = name->length;
+
+    if (current->scope_depth > 0)
+    {
+        error_at_current("Method declared inside scope.");
+        return;
+    }
+
+    // parameters
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after method name.");
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after method parameters.");
+
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after method parameters.");
+
+    // record into other chunk that will be saved in variable!
+    chunk_t* methodBody = ALLOCATE(chunk_t, 1);
+    init_chunk(methodBody);
+
+    chunk_t* oldChunk = current_chunk();
+    compiling_chunk = methodBody;
+
+    begin_scope();
+    block();
+    end_scope();
+
+    emit_byte(OP_RETURN);
+
+    compiling_chunk = oldChunk;
+
+    make_constant(OBJ_VAL(create_method(nameStart, nameLength, methodBody)));
 }
 
 static void print_statement(void)
@@ -562,6 +642,10 @@ static void declaration(void)
     if (match(TOKEN_VAR))
     {
         var_declaration();
+    }
+    else if (match(TOKEN_FUN))
+    {
+        method_declaration();
     }
     else
     {

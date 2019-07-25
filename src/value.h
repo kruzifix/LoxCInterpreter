@@ -5,6 +5,7 @@
 
 typedef struct sobj_t obj_t;
 typedef struct sobj_string_t obj_string_t;
+typedef struct sobj_method_t obj_method_t;
 
 typedef enum {
     VAL_BOOL,

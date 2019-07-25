@@ -8,7 +8,8 @@
 #include "vm.h"
 
 const char* OBJ_TYPE_STRING[] = {
-    "string"
+    "string",
+    "method"
 };
 
 #define ALLOCATE_OBJ(type, objectType) (type*)allocate_object(sizeof(type), objectType)
@@ -80,6 +81,20 @@ obj_string_t* copy_string(const char* chars, int length)
     return allocate_string(heapChars, length, hash);
 }
 
+obj_method_t* create_method(const char* name, int nameLength, chunk_t* chunk)
+{
+    obj_method_t* obj = ALLOCATE_OBJ(obj_method_t, OBJ_METHOD);
+
+    obj_string_t* nameStr = copy_string(name, nameLength);
+
+    obj->name = nameStr;
+    obj->chunk = chunk;
+
+    return obj;
+}
+
+#include "debug.h"
+
 void print_object(value_t value)
 {
     switch (OBJ_TYPE(value))
@@ -87,5 +102,13 @@ void print_object(value_t value)
     case OBJ_STRING:
         printf("%s", AS_CSTRING(value));
         break;
+    case OBJ_METHOD: {
+            obj_method_t* method = AS_METHOD(value);
+            printf("%s':\n", method->name->chars);
+
+            disassemble_chunk(method->chunk, method->name->chars);
+
+            break;
+        }
     }
 }

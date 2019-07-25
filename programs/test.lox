@@ -1,12 +1,6 @@
-for (var i = 0; i < 2; i = i + 1)
+fun david()
 {
-    print "begin outer loop. i:";
-    print i;
-    for (var j = 0; j < 2; j = j + 1)
-    {
-        print "inner loop. j:";
-        print j;
-    }
-    print "end outer loop. i:";
-    print i;
+    print "david";
 }
+
+print "test";
