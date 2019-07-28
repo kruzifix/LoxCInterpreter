@@ -134,6 +134,13 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2)
     emit_byte(byte2);
 }
 
+static int emit_jump(uint8_t instruction)
+{
+    emit_byte(instruction);
+    emit_bytes(0xFF, 0xFF);
+    return current_chunk()->count - 2;
+}
+
 static void emit_with_arg(uint8_t code, uint8_t codeLong, int arg)
 {
     if (arg <= 0xFF)
@@ -168,6 +175,19 @@ static int make_constant(value_t value)
 static void emit_constant(value_t value)
 {
     write_constant(current_chunk(), value, parser.previous.line);
+}
+
+static void patch_jump(int offset)
+{
+    int jump = current_chunk()->count - offset - 2;
+
+    if (jump > UINT16_MAX)
+    {
+        error("Too much code to jump over.");
+    }
+
+    current_chunk()->code[offset] = (jump >> 8) & 0xFF;
+    current_chunk()->code[offset + 1] = jump & 0xFF;
 }
 
 static void init_compiler(compiler_t* compiler)
@@ -504,6 +524,18 @@ static void expression_statement(void)
     consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
 }
 
+static void if_statement(void)
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after if.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int thenJump = emit_jump(OP_JUMP_IF_FALSE);
+    statement();
+
+    patch_jump(thenJump);
+}
+
 static void var_declaration(void)
 {
     int global = parse_variable("Expect variable name.");
@@ -586,6 +618,10 @@ static void statement(void)
     if (match(TOKEN_PRINT))
     {
         print_statement();
+    }
+    else if (match(TOKEN_IF))
+    {
+        if_statement();
     }
     else if (match(TOKEN_LEFT_BRACE))
     {

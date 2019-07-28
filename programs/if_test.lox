@@ -1,0 +1,16 @@
+var bla = true;
+
+if (bla)
+{
+	print("bla is true!");
+}
+
+if (!bla)
+{
+	print("bla is false!");
+}
+
+if (0)
+{
+	print("0 == true");
+}
