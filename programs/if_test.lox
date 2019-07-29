@@ -1,8 +1,4 @@
-var bla = 5;
-
-while (bla > 0)
+for (var bla = 5; bla > 0; bla = bla - 1)
 {
 	print(bla);
-
-	bla = bla - 1;
 }
