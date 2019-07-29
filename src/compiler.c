@@ -345,6 +345,16 @@ static void unary(bool canAssign)
     }
 }
 
+static void and_(bool canAssign)
+{
+    int endJump = emit_jump(OP_JUMP_IF_FALSE);
+
+    emit_byte(OP_POP);
+    parse_precedence(PREC_AND);
+
+    patch_jump(endJump);
+}
+
 parse_rule_t rules[] = {
     { grouping, NULL,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
@@ -368,7 +378,7 @@ parse_rule_t rules[] = {
     { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
     { string,   NULL,    PREC_NONE },       // TOKEN_STRING
     { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
-    { NULL,     NULL,    PREC_AND },        // TOKEN_AND
+    { NULL,     and_,    PREC_AND },        // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
     { literal,     NULL,    PREC_NONE },    // TOKEN_FALSE

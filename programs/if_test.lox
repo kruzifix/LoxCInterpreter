@@ -1,10 +1,16 @@
-var bla = false;
+var bla = 5;
 
-if (bla)
+if (bla < 10)
 {
-	print("bla is true!");
+	print("bla < 10!");
+
+	if (bla > 3)
+	{
+		print("bla > 3!");
+	}
 }
-else
+
+if (bla < 10 and bla > 3)
 {
-	print("bla is false!");
+	print("3 < bla < 10");
 }
