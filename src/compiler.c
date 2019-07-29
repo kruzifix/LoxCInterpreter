@@ -355,6 +355,18 @@ static void and_(bool canAssign)
     patch_jump(endJump);
 }
 
+static void or_(bool canAssign)
+{
+    int elseJump = emit_jump(OP_JUMP_IF_FALSE);
+    int endJump = emit_jump(OP_JUMP);
+
+    patch_jump(elseJump);
+    emit_byte(OP_POP);
+
+    parse_precedence(PREC_OR);
+    patch_jump(endJump);
+}
+
 parse_rule_t rules[] = {
     { grouping, NULL,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
@@ -386,7 +398,7 @@ parse_rule_t rules[] = {
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
     { literal,     NULL,    PREC_NONE },    // TOKEN_NIL
-    { NULL,     NULL,    PREC_OR },         // TOKEN_OR
+    { NULL,     or_,    PREC_OR },         // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
