@@ -531,9 +531,20 @@ static void if_statement(void)
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
     int thenJump = emit_jump(OP_JUMP_IF_FALSE);
+    emit_byte(OP_POP);
     statement();
 
+    int elseJump = emit_jump(OP_JUMP);
+
     patch_jump(thenJump);
+    emit_byte(OP_POP);
+
+    if (match(TOKEN_ELSE))
+    {
+        statement();
+    }
+
+    patch_jump(elseJump);
 }
 
 static void var_declaration(void)
