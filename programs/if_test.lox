@@ -10,7 +10,7 @@ if (bla < 10)
 	}
 }
 
-if (bla < 10 and bla > 3)
+if (bla < 10 and bla > 3 and bla < 6)
 {
-	print("3 < bla < 10");
+	print("3 < bla < 5");
 }

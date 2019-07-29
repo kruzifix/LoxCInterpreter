@@ -101,9 +101,9 @@ int disassemble_instruction(chunk_t* chunk, int offset)
     case OP_EQUAL:
         return simple_instruction("OP_EQUAL", offset);
     case OP_GREATER:
-        return simple_instruction("OP_EQUAL", offset);
+        return simple_instruction("OP_GREATER", offset);
     case OP_LESS:
-        return simple_instruction("OP_EQUAL", offset);
+        return simple_instruction("OP_LESS", offset);
     case OP_CONSTANT_LONG:
         return constant_long_instruction("OP_CONSTANT_LONG", chunk, offset);
     case OP_ADD:
