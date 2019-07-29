@@ -1,6 +1,8 @@
 var bla = 5;
 
-if (bla < 3 or bla < 10)
+while (bla > 0)
 {
-	print("bla");
+	print(bla);
+
+	bla = bla - 1;
 }
