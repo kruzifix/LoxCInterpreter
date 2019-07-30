@@ -11,7 +11,7 @@ var love = "anna";
 
         print asdf;
 
-        var x = bla + 3;
+        var x = bla + "asdf";
 
         print x;
     }

@@ -44,7 +44,15 @@ typedef struct {
     int depth;
 } local_t;
 
+typedef enum {
+    TYPE_FUNCTION,
+    TYPE_SCRIPT
+} function_type_t;
+
 typedef struct {
+    obj_function_t* function;
+    function_type_t type;
+
     local_t locals[UINT8_COUNT];
     int local_count;
     int scope_depth;
@@ -56,7 +64,7 @@ chunk_t* compiling_chunk;
 
 static chunk_t* current_chunk(void)
 {
-    return compiling_chunk;
+    return &(current->function->chunk);
 }
 
 static void error_at(token_t* token, const char* message)
@@ -141,7 +149,7 @@ static int emit_jump(uint8_t instruction)
     return current_chunk()->count - 2;
 }
 
-static int emit_loop(int loopStart)
+static void emit_loop(int loopStart)
 {
     emit_byte(OP_LOOP);
 
@@ -204,23 +212,35 @@ static void patch_jump(int offset)
     current_chunk()->code[offset + 1] = jump & 0xFF;
 }
 
-static void init_compiler(compiler_t* compiler)
+static void init_compiler(compiler_t* compiler, function_type_t type)
 {
+    compiler->function = NULL;
+    compiler->type = type;
     compiler->local_count = 0;
     compiler->scope_depth = 0;
+    compiler->function = new_function();
     current = compiler;
+
+    local_t* local = &current->locals[current->local_count++];
+    local->depth = 0;
+    local->name.start = "";
+    local->name.length = 0;
 }
 
-static void end_compiler(bool printCode)
+static obj_function_t* end_compiler(bool printCode)
 {
     emit_return();
+
+    obj_function_t* func = current->function;
 
 //#ifdef DEBUG_PRINT_CODE
     if (printCode && !parser.had_error)
     {
-        disassemble_chunk(current_chunk(), "code");
+        disassemble_chunk(current_chunk(), func->name != NULL ? func->name->chars : "<script>");
     }
 //#endif
+
+    return func;
 }
 
 static void begin_scope(void)
@@ -766,13 +786,12 @@ static void statement(void)
     }
 }
 
-bool compile(const char* source, chunk_t* chunk, bool printCode)
+obj_function_t* compile(const char* source, bool printCode)
 {
     init_scanner(source);
     compiler_t compiler;
-    init_compiler(&compiler);
+    init_compiler(&compiler, TYPE_SCRIPT);
 
-    compiling_chunk = chunk;
     parser.had_error = false;
     parser.panic_mode = false;
 
@@ -782,6 +801,6 @@ bool compile(const char* source, chunk_t* chunk, bool printCode)
         declaration();
     }
 
-    end_compiler(printCode);
-    return !parser.had_error;
+    obj_function_t* func = end_compiler(printCode);
+    return parser.had_error ? NULL : func;
 }

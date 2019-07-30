@@ -19,6 +19,12 @@ static void free_object(obj_t* obj)
 {
     switch (obj->type)
     {
+    case OBJ_FUNCTION: {
+        obj_function_t* func = (obj_function_t*)obj;
+        free_chunk(&(func->chunk));
+        FREE(obj_function_t, func);
+        break;
+    }
     case OBJ_STRING: {
         obj_string_t* str = (obj_string_t*)obj;
         FREE_ARRAY(char, str->chars, str->length + 1);

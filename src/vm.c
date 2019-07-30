@@ -20,6 +20,7 @@ vm_t vm;
 static void reset_stack(void)
 {
     vm.stack_top = vm.stack;
+    vm.frame_count = 0;
 }
 
 static void runtime_error(const char* format, ...)
@@ -28,10 +29,17 @@ static void runtime_error(const char* format, ...)
     va_start(args, format);
     vfprintf(stderr, format, args);
     va_end(args);
-    fputs("\n", stderr);
+    fputs("\n-------- call stack --------\n", stderr);
 
-    size_t instruction = vm.ip - vm.chunk->code;
-    fprintf(stderr, "[line %d] in script\n", vm.chunk->lines[instruction]);
+    for (uint8_t i = 0; i < vm.frame_count; ++i)
+    {
+        call_frame_t* frame = &(vm.frames[i]);
+
+        size_t instruction = frame->ip - frame->function->chunk.code;
+        char* name = frame->function->name != NULL ? frame->function->name->chars : "<script>";
+        fprintf(stderr, "[line %d] in %s\n", frame->function->chunk.lines[instruction], name);
+    }
+    fputs("----------------------------\n", stderr);
 
     reset_stack();
 }
@@ -78,16 +86,18 @@ static void concatenate()
 
 static interpret_result_t run(bool traceExecution)
 {
-#define READ_BYTE() (*(vm.ip++))
-#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+    call_frame_t* frame = &(vm.frames[vm.frame_count - 1]);
+
+#define READ_BYTE() (*(frame->ip++))
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define CONSTANT_LONG(name) int constIndex = 0; \
     constIndex |= ((int)READ_BYTE() << 16); \
     constIndex |= ((int)READ_BYTE() << 8); \
     constIndex |= READ_BYTE(); \
-    value_t name = vm.chunk->constants.values[constIndex]
+    value_t name = frame->function->chunk.constants.values[constIndex]
 
 #define STRING_LONG(name) CONSTANT_LONG(constant); \
     obj_string_t* name = AS_STRING(constant)
@@ -116,7 +126,7 @@ static interpret_result_t run(bool traceExecution)
                 printf(" ]");
             }
             printf("\n");
-            disassemble_instruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+            disassemble_instruction(&(frame->function->chunk), (int)(frame->ip - frame->function->chunk.code));
         }
 //#endif
 
@@ -148,7 +158,7 @@ static interpret_result_t run(bool traceExecution)
 
         case OP_GET_LOCAL: {
             uint8_t slot = READ_BYTE();
-            push(vm.stack[slot]);
+            push(frame->slots[slot]);
             break;
         }
 
@@ -192,7 +202,7 @@ static interpret_result_t run(bool traceExecution)
 
         case OP_SET_LOCAL: {
             uint8_t slot = READ_BYTE();
-            vm.stack[slot] = peek(0);
+            frame->slots[slot] = peek(0);
             break;
         }
 
@@ -264,7 +274,7 @@ static interpret_result_t run(bool traceExecution)
 
         case OP_JUMP: {
             uint16_t offset = READ_SHORT();
-            vm.ip += offset;
+            frame->ip += offset;
             break;
         }
 
@@ -272,14 +282,14 @@ static interpret_result_t run(bool traceExecution)
             uint16_t offset = READ_SHORT();
             if (isFalsey(peek(0)))
             {
-                vm.ip += offset;
+                frame->ip += offset;
             }
             break;
         }
 
         case OP_LOOP: {
             uint16_t offset = READ_SHORT();
-            vm.ip -= offset;
+            frame->ip -= offset;
             break;
         }
 
@@ -298,22 +308,17 @@ static interpret_result_t run(bool traceExecution)
 
 interpret_result_t interpret(const char* source, interpreter_params_t* params)
 {
-    chunk_t chunk;
-    init_chunk(&chunk);
-
-    if (!compile(source, &chunk, params->print_disassembly))
-    {
-        free_chunk(&chunk);
+    obj_function_t* func = compile(source, params->print_disassembly);
+    if (func == NULL)
         return INTERPRET_COMPILE_ERROR;
-    }
 
-    vm.chunk = &chunk;
-    vm.ip = vm.chunk->code;
+    push(OBJ_VAL(func));
+    call_frame_t* frame = &(vm.frames[vm.frame_count++]);
+    frame->function = func;
+    frame->ip = func->chunk.code;
+    frame->slots = vm.stack;
 
-    interpret_result_t result = run(params->trace_execution);
-
-    free_chunk(&chunk);
-    return result;
+    return run(params->trace_execution);
 }
 
 void push(value_t value)
