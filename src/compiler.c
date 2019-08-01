@@ -179,6 +179,7 @@ static void emit_with_arg(uint8_t code, uint8_t codeLong, int arg)
 
 static void emit_return(void)
 {
+    emit_byte(OP_NIL);
     emit_byte(OP_RETURN);
 }
 
@@ -308,6 +309,33 @@ static void binary(bool canAssign)
     }
 }
 
+static uint8_t argument_list(void)
+{
+    uint8_t argCount = 0;
+
+    if (!check(TOKEN_RIGHT_PAREN))
+    {
+        do {
+            expression();
+
+            if (argCount == 255)
+            {
+                error("Cannot have more than 255 arguments.");
+            }
+            argCount++;
+        } while (match(TOKEN_COMMA));
+    }
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+    return argCount;
+}
+
+static void call(bool canAssign)
+{
+    uint8_t argCount = argument_list();
+    emit_bytes(OP_CALL, argCount);
+}
+
 static void literal(bool canAssign)
 {
     switch (parser.previous.type)
@@ -411,7 +439,7 @@ static void or_(bool canAssign)
 }
 
 parse_rule_t rules[] = {
-    { grouping, NULL,    PREC_CALL },       // TOKEN_LEFT_PAREN
+    { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
@@ -693,6 +721,21 @@ static void for_statement(void)
     end_scope();
 }
 
+static void return_statement(void)
+{
+    if (current->type == TYPE_SCRIPT)
+        error("Cannot return from top-level code.");
+
+    if (match(TOKEN_SEMICOLON))
+        emit_return();
+    else
+    {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+        emit_byte(OP_RETURN);
+    }
+}
+
 static void while_statement(void)
 {
     int loopStart = current_chunk()->count;
@@ -820,6 +863,10 @@ static void statement(void)
     else if (match(TOKEN_FOR))
     {
         for_statement();
+    }
+    else if (match(TOKEN_RETURN))
+    {
+        return_statement();
     }
     else if (match(TOKEN_WHILE))
     {
