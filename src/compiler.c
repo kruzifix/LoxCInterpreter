@@ -49,7 +49,8 @@ typedef enum {
     TYPE_SCRIPT
 } function_type_t;
 
-typedef struct {
+typedef struct compiler__ {
+    struct compiler__* enclosing;
     obj_function_t* function;
     function_type_t type;
 
@@ -214,12 +215,18 @@ static void patch_jump(int offset)
 
 static void init_compiler(compiler_t* compiler, function_type_t type)
 {
+    compiler->enclosing = current;
     compiler->function = NULL;
     compiler->type = type;
     compiler->local_count = 0;
     compiler->scope_depth = 0;
     compiler->function = new_function();
     current = compiler;
+
+    if (type != TYPE_SCRIPT)
+    {
+        current->function->name = copy_string(parser.previous.start, parser.previous.length);
+    }
 
     local_t* local = &current->locals[current->local_count++];
     local->depth = 0;
@@ -240,6 +247,7 @@ static obj_function_t* end_compiler(bool printCode)
     }
 //#endif
 
+    current = current->enclosing;
     return func;
 }
 
@@ -268,6 +276,7 @@ static void end_scope(void)
 static void expression(void);
 static void statement(void);
 static void declaration(void);
+static void fun_declaration(void);
 static int identifier_constant(token_t* token);
 static int resolve_local(compiler_t* compiler, token_t* name);
 
@@ -734,7 +743,11 @@ static void synchronize(void)
 
 static void declaration(void)
 {
-    if (match(TOKEN_VAR))
+    if (match(TOKEN_FUN))
+    {
+        fun_declaration();
+    }
+    else if (match(TOKEN_VAR))
     {
         var_declaration();
     }
@@ -754,6 +767,44 @@ static void block(void)
     }
 
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+}
+
+static void function(function_type_t type)
+{
+    compiler_t compiler;
+    init_compiler(&compiler, type);
+    begin_scope();
+
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+    if (!check(TOKEN_RIGHT_PAREN))
+    {
+        do {
+            int paramConst = parse_variable("Expect parameter name.");
+            define_variable(paramConst);
+
+            current->function->arity++;
+            if (current->function->arity > 8)
+            {
+                error("Cannot have more than 8 parameters.");
+            }
+        } while (match(TOKEN_COMMA));
+    }
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after function body.");
+    block();
+
+    // TODO: somehow pass 'printCode' param to here!
+    obj_function_t* func = end_compiler(false);
+    emit_constant(OBJ_VAL(func));
+}
+
+static void fun_declaration(void)
+{
+    int global = parse_variable("Expect function name");
+    mark_initialized();
+    function(TYPE_FUNCTION);
+    define_variable(global);
 }
 
 static void statement(void)

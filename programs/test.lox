@@ -1,24 +1,6 @@
-var love = "anna";
-
+fun asdf()
 {
-    var test = 1;
-    var x = 5;
-
-    var bla = x + test * x;
-
-    {
-        var asdf = bla + x - test;
-
-        print asdf;
-
-        var x = bla + "asdf";
-
-        print x;
-    }
-
-    print x;
-
-    print bla;
+    print "fun!";
 }
 
-print love;
+print asdf;

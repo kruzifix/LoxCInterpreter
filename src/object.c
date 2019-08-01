@@ -91,8 +91,11 @@ void print_object(value_t value)
 {
     switch (OBJ_TYPE(value))
     {
-    case OBJ_FUNCTION:
-        printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+    case OBJ_FUNCTION: {
+        obj_function_t* func = AS_FUNCTION(value);
+        printf("<fn %s>", func->name != NULL ? func->name->chars : "SCRIPT");
+        break;
+    }
     case OBJ_STRING:
         printf("%s", AS_CSTRING(value));
         break;
