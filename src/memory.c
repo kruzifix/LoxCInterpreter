@@ -25,6 +25,10 @@ static void free_object(obj_t* obj)
         FREE(obj_function_t, func);
         break;
     }
+    case OBJ_NATIVE: {
+        FREE(obj_native_t, obj);
+        break;
+    }
     case OBJ_STRING: {
         obj_string_t* str = (obj_string_t*)obj;
         FREE_ARRAY(char, str->chars, str->length + 1);

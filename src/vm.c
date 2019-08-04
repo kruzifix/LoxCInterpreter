@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -16,6 +17,47 @@ const char* INTERPRET_RESULT_STRING[] = {
 };
 
 vm_t vm;
+
+static void runtime_error(const char* format, ...);
+
+static value_t clock_native(int argCount, value_t* args)
+{
+    return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+static value_t printf_native(int argCount, value_t* args)
+{
+    if (argCount == 0)
+        runtime_error("printf expects format string following by values: printf(format_string, ...)");
+
+    // first arg is format string
+    if (IS_OBJ(*args) && IS_STRING(*args))
+    {
+        obj_string_t* fmt = AS_STRING(*args);
+
+        uint8_t argPos = 1;
+        for (int i = 0; i < fmt->length; ++i)
+        {
+            char c = fmt->chars[i];
+
+            if (c == '%')
+            {
+                print_value(args[argPos++]);
+            }
+            else
+            {
+                printf("%c", c);
+            }
+        }
+        printf("\n");
+    }
+    else
+    {
+        runtime_error("printf expects format string following by values: printf(format_string, ...)");
+    }
+
+    return NIL_VAL;
+}
 
 static void reset_stack(void)
 {
@@ -49,12 +91,24 @@ static void runtime_error(const char* format, ...)
     reset_stack();
 }
 
+static void define_native(const char* name, native_func_t func)
+{
+    push(OBJ_VAL(copy_string(name, (int)strlen(name))));
+    push(OBJ_VAL(new_native(func)));
+    table_set(&(vm.globals), AS_STRING(vm.stack[0]), vm.stack[1]);
+    pop();
+    pop();
+}
+
 void init_vm(void)
 {
     reset_stack();
     init_table(&vm.globals);
     init_table(&vm.strings);
     vm.objects = NULL;
+
+    define_native("clock", clock_native);
+    define_native("printf", printf_native);
 }
 
 void free_vm(void)
@@ -99,6 +153,13 @@ static bool call_value(value_t callee, uint8_t argCount)
         {
         case OBJ_FUNCTION:
             return call(AS_FUNCTION(callee), argCount);
+        case OBJ_NATIVE: {
+            native_func_t func = AS_NATIVE(callee);
+            value_t result = func(argCount, vm.stack_top - argCount);
+            vm.stack_top -= argCount + 1;
+            push(result);
+            return true;
+        }
 
         default:
             // Non-callable object type.

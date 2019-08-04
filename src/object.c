@@ -57,6 +57,13 @@ obj_function_t* new_function(void)
     return func;
 }
 
+obj_native_t* new_native(native_func_t func)
+{
+    obj_native_t* nat = ALLOCATE_OBJ(obj_native_t, OBJ_NATIVE);
+    nat->function = func;
+    return nat;
+}
+
 obj_string_t* take_string(char* chars, int length)
 {
     uint32_t hash = hash_string(chars, length);
@@ -94,6 +101,10 @@ void print_object(value_t value)
     case OBJ_FUNCTION: {
         obj_function_t* func = AS_FUNCTION(value);
         printf("<fn %s>", func->name != NULL ? func->name->chars : "SCRIPT");
+        break;
+    }
+    case OBJ_NATIVE: {
+        printf("<native fn>");
         break;
     }
     case OBJ_STRING:
