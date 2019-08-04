@@ -29,6 +29,12 @@ static void free_object(obj_t* obj)
         FREE(obj_native_t, obj);
         break;
     }
+    case OBJ_ARRAY: {
+        obj_array_t* arr = (obj_array_t*)obj;
+        free_value_array(&(arr->array));
+        FREE(obj_array_t, arr);
+        break;
+    }
     case OBJ_STRING: {
         obj_string_t* str = (obj_string_t*)obj;
         FREE_ARRAY(char, str->chars, str->length + 1);

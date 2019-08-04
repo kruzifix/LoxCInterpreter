@@ -1,14 +1,6 @@
+var a = ["david", "<3", "anna", 1, 2, 3, 4, 5];
 
-fun fib(n) {
-  if (n < 2) return n;
-  return fib(n - 2) + fib(n - 1);
-}
+print(a);
 
-for (var i = 0; i < 30; i = i + 1)
-{
-    var start = clock();
-    var res = fib(i);
-    var duration = clock() - start;
-
-    printf("%: % took % s", i, res, duration);
-}
+for (var i = 0; i < len(a); i = i + 1)
+  print(a[i]);

@@ -28,7 +28,10 @@ static value_t clock_native(int argCount, value_t* args)
 static value_t printf_native(int argCount, value_t* args)
 {
     if (argCount == 0)
+    {
         runtime_error("printf expects format string following by values: printf(format_string, ...)");
+        return NIL_VAL;
+    }
 
     // first arg is format string
     if (IS_OBJ(*args) && IS_STRING(*args))
@@ -56,6 +59,22 @@ static value_t printf_native(int argCount, value_t* args)
         runtime_error("printf expects format string following by values: printf(format_string, ...)");
     }
 
+    return NIL_VAL;
+}
+
+static value_t len_native(int argCount, value_t* args)
+{
+    if (argCount != 1)
+    {
+        runtime_error("len() expects one argument.");
+        return NIL_VAL;
+    }
+
+    if (IS_OBJ(*args) && IS_ARRAY(*args))
+    {
+        return NUMBER_VAL(AS_ARRAY(*args)->array.count);
+    }
+    runtime_error("len() expects array as parameter.");
     return NIL_VAL;
 }
 
@@ -109,6 +128,8 @@ void init_vm(void)
 
     define_native("clock", clock_native);
     define_native("printf", printf_native);
+
+    define_native("len", len_native);
 }
 
 void free_vm(void)
@@ -191,6 +212,19 @@ static void concatenate()
     push(OBJ_VAL(result));
 }
 
+static void create_array(int valueCount)
+{
+    obj_array_t* arrObj = new_array(valueCount);
+    value_array_t* arr = &(arrObj->array);
+
+    for (int i = valueCount - 1; i >= 0; i--)
+    {
+        arr->values[i] = pop();
+    }
+
+    push(OBJ_VAL(arrObj));
+}
+
 static interpret_result_t run(bool traceExecution)
 {
     call_frame_t* frame = &(vm.frames[vm.frame_count - 1]);
@@ -222,7 +256,7 @@ static interpret_result_t run(bool traceExecution)
 
     for (;;)
     {
-//#ifdef DEBUG_TRACE_EXECUTION
+        //#ifdef DEBUG_TRACE_EXECUTION
         if (traceExecution)
         {
             printf("          ");
@@ -235,7 +269,7 @@ static interpret_result_t run(bool traceExecution)
             printf("\n");
             disassemble_instruction(&(frame->function->chunk), (int)(frame->ip - frame->function->chunk.code));
         }
-//#endif
+        //#endif
 
         uint8_t instruction;
         switch (instruction = READ_BYTE())
@@ -340,8 +374,8 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
 
-        case OP_GREATER:    BINARY_OP(BOOL_VAL, >); break;
-        case OP_LESS:       BINARY_OP(BOOL_VAL, <); break;
+        case OP_GREATER:    BINARY_OP(BOOL_VAL, > ); break;
+        case OP_LESS:       BINARY_OP(BOOL_VAL, < ); break;
         case OP_ADD: {
             if (IS_STRING(peek(0)) && IS_STRING(peek(1)))
             {
@@ -362,7 +396,7 @@ static interpret_result_t run(bool traceExecution)
         }
         case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
         case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
-        case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;
+        case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, / ); break;
         case OP_NOT: push(BOOL_VAL(isFalsey(pop()))); break;
         case OP_NEGATE:
             if (!IS_NUMBER(peek(0)))
@@ -410,6 +444,42 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
 
+        case OP_CREATE_ARRAY: {
+            int valueCount = READ_SHORT();
+            create_array(valueCount);
+            break;
+        }
+
+        case OP_GET_ELEMENT: {
+            value_t index = pop();
+            // check that index is number
+            if (!IS_NUMBER(index))
+            {
+                runtime_error("only numbers allowed for array indexing.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+
+            value_t arrObj = pop();
+            if (!IS_ARRAY(arrObj))
+            {
+                runtime_error("can only index array!");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+
+            int num = (int)(AS_NUMBER(index));
+            value_array_t* ar = &(AS_ARRAY(arrObj)->array);
+
+            if (num < 0 || num >= ar->count)
+            {
+                runtime_error("index out of range!");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+
+            push(ar->values[num]);
+
+            break;
+        }
+
         case OP_RETURN: {
             value_t result = pop();
 
@@ -419,7 +489,7 @@ static interpret_result_t run(bool traceExecution)
 
             vm.stack_top = frame->slots;
             push(result);
-            
+
             frame = &(vm.frames[vm.frame_count - 1]);
             break;
         }

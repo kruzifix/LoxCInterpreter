@@ -143,6 +143,11 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2)
     emit_byte(byte2);
 }
 
+static void emit_short(int value)
+{
+    emit_bytes((value >> 8) & 0xFF, value & 0xFF);
+}
+
 static int emit_jump(uint8_t instruction)
 {
     emit_byte(instruction);
@@ -160,8 +165,7 @@ static void emit_loop(int loopStart)
         error("loop body too large!");
     }
 
-    emit_byte((offset >> 8) & 0xFF);
-    emit_byte(offset & 0xFF);
+    emit_short(offset);
 }
 
 static void emit_with_arg(uint8_t code, uint8_t codeLong, int arg)
@@ -241,12 +245,12 @@ static obj_function_t* end_compiler(bool printCode)
 
     obj_function_t* func = current->function;
 
-//#ifdef DEBUG_PRINT_CODE
+    //#ifdef DEBUG_PRINT_CODE
     if (printCode && !parser.had_error)
     {
         disassemble_chunk(current_chunk(), func->name != NULL ? func->name->chars : "<script>");
     }
-//#endif
+    //#endif
 
     current = current->enclosing;
     return func;
@@ -438,11 +442,38 @@ static void or_(bool canAssign)
     patch_jump(endJump);
 }
 
+static void array(bool canAssign)
+{
+    int valueCount = 0;
+    if (!match(TOKEN_RIGHT_BRACKET))
+    {
+        do {
+            expression();
+            valueCount++;
+        } while (match(TOKEN_COMMA));
+        consume(TOKEN_RIGHT_BRACKET, "Expect ']' after values.");
+    }
+
+    emit_byte(OP_CREATE_ARRAY);
+    emit_short(valueCount);
+}
+
+static void index_array(bool canAssign)
+{
+    expression();
+
+    consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index value.");
+
+    emit_byte(OP_GET_ELEMENT);
+}
+
 parse_rule_t rules[] = {
     { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
+    { array,    index_array,    PREC_CALL },       // TOKEN_LEFT_BRACKET
+    { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACKET
     { NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
     { NULL,     NULL,    PREC_CALL },       // TOKEN_DOT
     { unary,    binary,  PREC_TERM },       // TOKEN_MINUS

@@ -46,6 +46,14 @@ static int byte_instruction(const char* name, chunk_t* chunk, int offset)
     return offset + 2;
 }
 
+static int short_instruction(const char* name, chunk_t* chunk, int offset)
+{
+    int value = (int)chunk->code[offset + 1] << 8;
+    value |= chunk->code[offset + 2];
+    printf("%-16s\t%d\n", name, value);
+    return offset + 3;
+}
+
 static int jump_instruction(const char* name, int sign, chunk_t* chunk, int offset)
 {
     uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 8);
@@ -128,6 +136,10 @@ int disassemble_instruction(chunk_t* chunk, int offset)
         return jump_instruction("OP_LOOP", -1, chunk, offset);
     case OP_CALL:
         return byte_instruction("OP_CALL", chunk, offset);
+    case OP_CREATE_ARRAY:
+        return short_instruction("OP_CREATE_ARRAY", chunk, offset);
+    case OP_GET_ELEMENT:
+        return simple_instruction("OP_GET_ELEMENT", offset);
     case OP_RETURN:
         return simple_instruction("OP_RETURN", offset);
     default:

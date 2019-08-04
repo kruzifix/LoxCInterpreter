@@ -12,6 +12,13 @@ void init_value_array(value_array_t* array)
     array->values = NULL;
 }
 
+void init_value_array_size(value_array_t* array, int size)
+{
+    array->count = size;
+    array->capacity = size;
+    array->values = ALLOCATE(value_t, size);
+}
+
 void free_value_array(value_array_t* array)
 {
     FREE_ARRAY(value_t, array->values, array->capacity);

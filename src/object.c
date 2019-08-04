@@ -20,7 +20,6 @@ static obj_t* allocate_object(size_t size, obj_type_t type)
     return obj;
 }
 
-
 static obj_string_t* allocate_string(char* chars, int length, uint32_t hash)
 {
     obj_string_t* str = ALLOCATE_OBJ(obj_string_t, OBJ_STRING);
@@ -64,6 +63,13 @@ obj_native_t* new_native(native_func_t func)
     return nat;
 }
 
+obj_array_t* new_array(int size)
+{
+    obj_array_t* arr = ALLOCATE_OBJ(obj_array_t, OBJ_ARRAY);
+    init_value_array_size(&(arr->array), size);
+    return arr;
+}
+
 obj_string_t* take_string(char* chars, int length)
 {
     uint32_t hash = hash_string(chars, length);
@@ -105,6 +111,18 @@ void print_object(value_t value)
     }
     case OBJ_NATIVE: {
         printf("<native fn>");
+        break;
+    }
+    case OBJ_ARRAY: {
+        value_array_t* ar = &(AS_ARRAY(value)->array);
+        printf("[");
+        for (int i = 0; i < ar->count; i++)
+        {
+            print_value(ar->values[i]);
+            if (i < ar->count - 1)
+                printf(", ");
+        }
+        printf("]");
         break;
     }
     case OBJ_STRING:
