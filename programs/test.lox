@@ -1,15 +1,18 @@
-var a = [0];
 
-print(a);
+fun test()
+{
 
-for (var i = 1; i < 6; i = i + 1)
-  a = a + [i];
+}
 
-print(a);
+var a = 1;
+var b = "asdf";
+var c = [1, 2, 3];
 
 
-// array multiplication! [0] * 5 => [0, 0, 0, 0, 0]
-
-// native func: type()
+print(type(a));
+print(type(b));
+print(type(c));
+print(type(clock));
+print(type(test));
 
 // foreach loop/iterator?

@@ -18,6 +18,8 @@
 #define AS_STRING(value) ((obj_string_t*)AS_OBJ(value))
 #define AS_CSTRING(value) (((obj_string_t*)AS_OBJ(value))->chars)
 
+const char* OBJ_TYPE_STRING[];
+
 typedef enum {
     OBJ_FUNCTION,
     OBJ_NATIVE,

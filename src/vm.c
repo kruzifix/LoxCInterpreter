@@ -20,6 +20,24 @@ vm_t vm;
 
 static void runtime_error(const char* format, ...);
 
+static value_t type_native(int argCount, value_t* args)
+{
+    if (argCount != 1)
+    {
+        runtime_error("type() expects one value.");
+        return NIL_VAL;
+    }
+
+    if (args->type == VAL_OBJ)
+    {
+        const char* str = OBJ_TYPE_STRING[OBJ_TYPE(*args)];
+        return OBJ_VAL(copy_string(str, strlen(str)));
+    }
+
+    const char* str = VALUE_TYPE_STRING[args->type];
+    return OBJ_VAL(copy_string(str, strlen(str)));
+}
+
 static value_t clock_native(int argCount, value_t* args)
 {
     return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
@@ -126,6 +144,8 @@ void init_vm(void)
     init_table(&vm.strings);
     vm.objects = NULL;
 
+    define_native("type", type_native);
+
     define_native("clock", clock_native);
     define_native("printf", printf_native);
 
@@ -221,6 +241,18 @@ static void concatenate_arrays(void)
     {
         write_value_array(&(list->array), append->array.values[i]);
     }
+}
+
+static void multiply_array(obj_array_t* arr, int num)
+{
+    obj_array_t* arrObj = new_array(arr->array.count * num);
+
+    for (int i = 0; i < arrObj->array.count; i++)
+    {
+        arrObj->array.values[i] = arr->array.values[i % arr->array.count];
+    }
+
+    push(OBJ_VAL(arrObj));
 }
 
 static void create_array(int valueCount)
@@ -410,7 +442,34 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
         case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
-        case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
+        case OP_MULTIPLY: {
+            if (IS_ARRAY(peek(1)) && IS_NUMBER(peek(0)))
+            {
+                double num = AS_NUMBER(pop());
+                obj_array_t* arr = AS_ARRAY(pop());
+
+                multiply_array(arr, (int)num);
+            }
+            else if (IS_ARRAY(peek(0)) && IS_NUMBER(peek(1)))
+            {
+                obj_array_t* arr = AS_ARRAY(pop());
+                double num = AS_NUMBER(pop());
+
+                multiply_array(arr, (int)num);
+            }
+            else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1)))
+            {
+                double b = AS_NUMBER(pop());
+                double a = AS_NUMBER(pop());
+                push(NUMBER_VAL(a + b));
+            }
+            else
+            {
+                runtime_error("Operands must be two numbers or array & number.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
         case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, / ); break;
         case OP_NOT: push(BOOL_VAL(isFalsey(pop()))); break;
         case OP_NEGATE:

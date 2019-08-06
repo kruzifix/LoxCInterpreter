@@ -5,6 +5,12 @@
 #include "value.h"
 #include "memory.h"
 
+const char* VALUE_TYPE_STRING[] = {
+    "nil",
+    "bool",
+    "number"
+};
+
 void init_value_array(value_array_t* array)
 {
     array->count = 0;

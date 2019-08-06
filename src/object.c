@@ -7,6 +7,13 @@
 #include "value.h"
 #include "vm.h"
 
+const char* OBJ_TYPE_STRING[] = {
+    "function",
+    "native",
+    "string",
+    "array"
+};
+
 #define ALLOCATE_OBJ(type, objectType) (type*)allocate_object(sizeof(type), objectType)
 
 static obj_t* allocate_object(size_t size, obj_type_t type)

@@ -6,9 +6,11 @@
 typedef struct sobj_t obj_t;
 typedef struct sobj_string_t obj_string_t;
 
+const char* VALUE_TYPE_STRING[];
+
 typedef enum {
-    VAL_BOOL,
     VAL_NIL,
+    VAL_BOOL,
     VAL_NUMBER,
     VAL_OBJ
 } value_type_t;
