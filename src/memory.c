@@ -29,10 +29,16 @@ static void free_object(obj_t* obj)
         FREE(obj_native_t, obj);
         break;
     }
-    case OBJ_ARRAY: {
-        obj_array_t* arr = (obj_array_t*)obj;
+    case OBJ_LIST: {
+        obj_list_t* arr = (obj_list_t*)obj;
         free_value_array(&(arr->array));
-        FREE(obj_array_t, arr);
+        FREE(obj_list_t, arr);
+        break;
+    }
+    case OBJ_MAP: {
+        obj_map_t* map = (obj_map_t*)obj;
+        free_table(&(map->table));
+        FREE(obj_map_t, map);
         break;
     }
     case OBJ_STRING: {

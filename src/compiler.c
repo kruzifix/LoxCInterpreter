@@ -442,7 +442,7 @@ static void or_(bool canAssign)
     patch_jump(endJump);
 }
 
-static void array(bool canAssign)
+static void list(bool canAssign)
 {
     int valueCount = 0;
     if (!match(TOKEN_RIGHT_BRACKET))
@@ -454,11 +454,11 @@ static void array(bool canAssign)
         consume(TOKEN_RIGHT_BRACKET, "Expect ']' after values.");
     }
 
-    emit_byte(OP_CREATE_ARRAY);
+    emit_byte(OP_CREATE_LIST);
     emit_short(valueCount);
 }
 
-static void index_array(bool canAssign)
+static void index_collection(bool canAssign)
 {
     expression();
 
@@ -467,17 +467,42 @@ static void index_array(bool canAssign)
     emit_byte(OP_GET_ELEMENT);
 }
 
+static void map(bool canAssign)
+{
+    // parse fields
+    int fieldCount = 0;
+
+    while (match(TOKEN_IDENTIFIER))
+    {
+        emit_constant(OBJ_VAL(copy_string(parser.previous.start, parser.previous.length)));
+
+        consume(TOKEN_COLON, "Expect ':' after key.");
+
+        expression();
+
+        fieldCount++;
+
+        match(TOKEN_COMMA);
+    }
+
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after map expression.");
+
+    emit_byte(OP_CREATE_MAP);
+    emit_short(fieldCount);
+}
+
 parse_rule_t rules[] = {
     { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
+    { map,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
-    { array,    index_array,    PREC_CALL },       // TOKEN_LEFT_BRACKET
+    { list,    index_collection,    PREC_CALL },       // TOKEN_LEFT_BRACKET
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACKET
     { NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
     { NULL,     NULL,    PREC_CALL },       // TOKEN_DOT
     { unary,    binary,  PREC_TERM },       // TOKEN_MINUS
     { NULL,     binary,  PREC_TERM },       // TOKEN_PLUS
+    { NULL,     NULL,    PREC_NONE },       // TOKEN_COLON
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
     { NULL,     binary,  PREC_FACTOR },     // TOKEN_SLASH
     { NULL,     binary,  PREC_FACTOR },     // TOKEN_STAR

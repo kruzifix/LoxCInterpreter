@@ -52,7 +52,7 @@ static value_t printf_native(int argCount, value_t* args)
     }
 
     // first arg is format string
-    if (IS_OBJ(*args) && IS_STRING(*args))
+    if (IS_STRING(*args))
     {
         obj_string_t* fmt = AS_STRING(*args);
 
@@ -88,10 +88,12 @@ static value_t len_native(int argCount, value_t* args)
         return NIL_VAL;
     }
 
-    if (IS_OBJ(*args) && IS_ARRAY(*args))
+    if (IS_LIST(*args))
     {
-        return NUMBER_VAL(AS_ARRAY(*args)->array.count);
+        return NUMBER_VAL(AS_LIST(*args)->array.count);
     }
+    // TO
+
     runtime_error("len() expects array as parameter.");
     return NIL_VAL;
 }
@@ -234,8 +236,8 @@ static void concatenate_strings(void)
 
 static void concatenate_arrays(void)
 {
-    obj_array_t* append = AS_ARRAY(pop());
-    obj_array_t* list = AS_ARRAY(peek(0));
+    obj_list_t* append = AS_LIST(pop());
+    obj_list_t* list = AS_LIST(peek(0));
 
     for (int i = 0; i < append->array.count; i++)
     {
@@ -243,9 +245,9 @@ static void concatenate_arrays(void)
     }
 }
 
-static void multiply_array(obj_array_t* arr, int num)
+static void multiply_array(obj_list_t* arr, int num)
 {
-    obj_array_t* arrObj = new_array(arr->array.count * num);
+    obj_list_t* arrObj = new_list(arr->array.count * num);
 
     for (int i = 0; i < arrObj->array.count; i++)
     {
@@ -255,17 +257,39 @@ static void multiply_array(obj_array_t* arr, int num)
     push(OBJ_VAL(arrObj));
 }
 
-static void create_array(int valueCount)
+static void create_list(int valueCount)
 {
-    obj_array_t* arrObj = new_array(valueCount);
-    value_array_t* arr = &(arrObj->array);
+    obj_list_t* listObj = new_list(valueCount);
+    value_array_t* arr = &(listObj->array);
 
     for (int i = valueCount - 1; i >= 0; i--)
     {
         arr->values[i] = pop();
     }
 
-    push(OBJ_VAL(arrObj));
+    push(OBJ_VAL(listObj));
+}
+
+static void create_map(int fieldCount)
+{
+    obj_map_t* mapObj = new_map(fieldCount);
+    table_t* tab = &(mapObj->table);
+
+    for (int i = 0; i < fieldCount; i++)
+    {
+        value_t value = pop();
+        value_t key = pop();
+
+        if (!IS_STRING(key))
+        {
+            runtime_error("map only supports strings as keys!");
+            return;
+        }
+
+        table_set(tab, AS_STRING(key), value);
+    }
+
+    push(OBJ_VAL(mapObj));
 }
 
 static interpret_result_t run(bool traceExecution)
@@ -424,7 +448,7 @@ static interpret_result_t run(bool traceExecution)
             {
                 concatenate_strings();
             }
-            else if (IS_ARRAY(peek(0)) && IS_ARRAY(peek(1)))
+            else if (IS_LIST(peek(0)) && IS_LIST(peek(1)))
             {
                 concatenate_arrays();
             }
@@ -443,16 +467,16 @@ static interpret_result_t run(bool traceExecution)
         }
         case OP_SUBTRACT:   BINARY_OP(NUMBER_VAL, -); break;
         case OP_MULTIPLY: {
-            if (IS_ARRAY(peek(1)) && IS_NUMBER(peek(0)))
+            if (IS_LIST(peek(1)) && IS_NUMBER(peek(0)))
             {
                 double num = AS_NUMBER(pop());
-                obj_array_t* arr = AS_ARRAY(pop());
+                obj_list_t* arr = AS_LIST(pop());
 
                 multiply_array(arr, (int)num);
             }
-            else if (IS_ARRAY(peek(0)) && IS_NUMBER(peek(1)))
+            else if (IS_LIST(peek(0)) && IS_NUMBER(peek(1)))
             {
-                obj_array_t* arr = AS_ARRAY(pop());
+                obj_list_t* arr = AS_LIST(pop());
                 double num = AS_NUMBER(pop());
 
                 multiply_array(arr, (int)num);
@@ -518,14 +542,22 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
 
-        case OP_CREATE_ARRAY: {
+        case OP_CREATE_LIST: {
             int valueCount = READ_SHORT();
-            create_array(valueCount);
+            create_list(valueCount);
+            break;
+        }
+
+        case OP_CREATE_MAP: {
+            int fieldCount = READ_SHORT();
+            create_map(fieldCount);
             break;
         }
 
         case OP_GET_ELEMENT: {
             value_t index = pop();
+            // TODO: list can only be indexed by number, map only by string
+
             // check that index is number
             if (!IS_NUMBER(index))
             {
@@ -534,14 +566,14 @@ static interpret_result_t run(bool traceExecution)
             }
 
             value_t arrObj = pop();
-            if (!IS_ARRAY(arrObj))
+            if (!IS_LIST(arrObj))
             {
                 runtime_error("can only index array!");
                 return INTERPRET_RUNTIME_ERROR;
             }
 
             int num = (int)(AS_NUMBER(index));
-            value_array_t* ar = &(AS_ARRAY(arrObj)->array);
+            value_array_t* ar = &(AS_LIST(arrObj)->array);
 
             if (num < 0 || num >= ar->count)
             {
@@ -574,6 +606,8 @@ static interpret_result_t run(bool traceExecution)
 #undef READ_SHORT
 #undef READ_CONSTANT
 #undef READ_STRING
+#undef CONSTANT_LONG
+#undef STRING_LONG
 #undef BINARY_OP
 }
 

@@ -34,8 +34,9 @@ typedef enum {
     OP_JUMP_IF_FALSE,
     OP_LOOP,
     OP_CALL,
-    OP_CREATE_ARRAY,
+    OP_CREATE_LIST,
     OP_GET_ELEMENT,
+    OP_CREATE_MAP,
     OP_RETURN
 } opcode_t;
 

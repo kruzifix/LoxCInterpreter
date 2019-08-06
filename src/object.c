@@ -11,7 +11,8 @@ const char* OBJ_TYPE_STRING[] = {
     "function",
     "native",
     "string",
-    "array"
+    "list",
+    "map"
 };
 
 #define ALLOCATE_OBJ(type, objectType) (type*)allocate_object(sizeof(type), objectType)
@@ -70,11 +71,18 @@ obj_native_t* new_native(native_func_t func)
     return nat;
 }
 
-obj_array_t* new_array(int size)
+obj_list_t* new_list(int size)
 {
-    obj_array_t* arr = ALLOCATE_OBJ(obj_array_t, OBJ_ARRAY);
+    obj_list_t* arr = ALLOCATE_OBJ(obj_list_t, OBJ_LIST);
     init_value_array_size(&(arr->array), size);
     return arr;
+}
+
+obj_map_t* new_map(void)
+{
+    obj_map_t* map = ALLOCATE_OBJ(obj_map_t, OBJ_MAP);
+    init_table(&(map->table));
+    return map;
 }
 
 obj_string_t* take_string(char* chars, int length)
@@ -120,8 +128,8 @@ void print_object(value_t value)
         printf("<native fn>");
         break;
     }
-    case OBJ_ARRAY: {
-        value_array_t* ar = &(AS_ARRAY(value)->array);
+    case OBJ_LIST: {
+        value_array_t* ar = &(AS_LIST(value)->array);
         printf("[");
         for (int i = 0; i < ar->count; i++)
         {
@@ -130,6 +138,23 @@ void print_object(value_t value)
                 printf(", ");
         }
         printf("]");
+        break;
+    }
+    case OBJ_MAP: {
+        table_t* tab = &(AS_MAP(value)->table);
+        printf("{");
+        for (int i = 0, j = 0; i < tab->capacity; i++)
+        {
+            entry_t* entry = tab->entries + i;
+            if (entry->key == NULL)
+                continue;
+            printf("%s: ", entry->key->chars);
+            print_value(entry->value);
+            if (j < tab->count - 1)
+                printf(", ");
+            j++;
+        }
+        printf("}");
         break;
     }
     case OBJ_STRING:

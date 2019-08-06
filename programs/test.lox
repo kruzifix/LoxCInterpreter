@@ -1,18 +1,15 @@
-
-fun test()
-{
-
-}
-
-var a = 1;
-var b = "asdf";
-var c = [1, 2, 3];
-
-
-print(type(a));
-print(type(b));
-print(type(c));
-print(type(clock));
-print(type(test));
-
 // foreach loop/iterator?
+
+// array assignment!
+
+
+var asdf = { 
+  count: 1,
+  test: "blabla",
+  ar: [1, 2, 3] };
+
+print(asdf);
+  
+//  test: "test",
+//  dings: false,
+//  blabla: [1, 2, 3] };

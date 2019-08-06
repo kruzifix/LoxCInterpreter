@@ -136,8 +136,10 @@ int disassemble_instruction(chunk_t* chunk, int offset)
         return jump_instruction("OP_LOOP", -1, chunk, offset);
     case OP_CALL:
         return byte_instruction("OP_CALL", chunk, offset);
-    case OP_CREATE_ARRAY:
+    case OP_CREATE_LIST:
         return short_instruction("OP_CREATE_ARRAY", chunk, offset);
+    case OP_CREATE_MAP:
+        return short_instruction("OP_CREATE_MAP", chunk, offset);
     case OP_GET_ELEMENT:
         return simple_instruction("OP_GET_ELEMENT", offset);
     case OP_RETURN:
