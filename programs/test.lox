@@ -1,6 +1,15 @@
-var a = ["david", "<3", "anna", 1, 2, 3, 4, 5];
+var a = [0];
 
 print(a);
 
-for (var i = 0; i < len(a); i = i + 1)
-  print(a[i]);
+for (var i = 1; i < 6; i = i + 1)
+  a = a + [i];
+
+print(a);
+
+
+// array multiplication! [0] * 5 => [0, 0, 0, 0, 0]
+
+// native func: type()
+
+// foreach loop/iterator?

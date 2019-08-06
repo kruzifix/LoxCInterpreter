@@ -197,7 +197,7 @@ static bool isFalsey(value_t value)
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value)) || (IS_NUMBER(value) && AS_NUMBER(value) == 0);
 }
 
-static void concatenate()
+static void concatenate_strings(void)
 {
     obj_string_t* b = AS_STRING(pop());
     obj_string_t* a = AS_STRING(pop());
@@ -210,6 +210,17 @@ static void concatenate()
 
     obj_string_t* result = take_string(chars, length);
     push(OBJ_VAL(result));
+}
+
+static void concatenate_arrays(void)
+{
+    obj_array_t* append = AS_ARRAY(pop());
+    obj_array_t* list = AS_ARRAY(peek(0));
+
+    for (int i = 0; i < append->array.count; i++)
+    {
+        write_value_array(&(list->array), append->array.values[i]);
+    }
 }
 
 static void create_array(int valueCount)
@@ -379,7 +390,11 @@ static interpret_result_t run(bool traceExecution)
         case OP_ADD: {
             if (IS_STRING(peek(0)) && IS_STRING(peek(1)))
             {
-                concatenate();
+                concatenate_strings();
+            }
+            else if (IS_ARRAY(peek(0)) && IS_ARRAY(peek(1)))
+            {
+                concatenate_arrays();
             }
             else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1)))
             {
