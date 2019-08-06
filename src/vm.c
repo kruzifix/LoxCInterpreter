@@ -555,33 +555,54 @@ static interpret_result_t run(bool traceExecution)
         }
 
         case OP_GET_ELEMENT: {
-            value_t index = pop();
+            value_t key = pop();
+            value_t collection = pop();
             // TODO: list can only be indexed by number, map only by string
 
-            // check that index is number
-            if (!IS_NUMBER(index))
+            if (IS_LIST(collection))
             {
-                runtime_error("only numbers allowed for array indexing.");
+                if (!IS_NUMBER(key))
+                {
+                    runtime_error("only numbers allowed for list indexing.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                int num = (int)(AS_NUMBER(key));
+                value_array_t* ar = &(AS_LIST(collection)->array);
+
+                if (num < 0 || num >= ar->count)
+                {
+                    runtime_error("index out of range!");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                push(ar->values[num]);
+            }
+            else if (IS_MAP(collection))
+            {
+                if (!IS_STRING(key))
+                {
+                    runtime_error("only strings allowed for map indexing.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                obj_string_t* strKey = AS_STRING(key);
+                table_t* tab = &(AS_MAP(collection)->table);
+
+                value_t val;
+                if (!table_get(tab, strKey, &val))
+                {
+                    runtime_error("map does not contain entry for key '%s'", strKey->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                push(val);
+            }
+            else
+            {
+                runtime_error("can only index list or map.");
                 return INTERPRET_RUNTIME_ERROR;
             }
-
-            value_t arrObj = pop();
-            if (!IS_LIST(arrObj))
-            {
-                runtime_error("can only index array!");
-                return INTERPRET_RUNTIME_ERROR;
-            }
-
-            int num = (int)(AS_NUMBER(index));
-            value_array_t* ar = &(AS_LIST(arrObj)->array);
-
-            if (num < 0 || num >= ar->count)
-            {
-                runtime_error("index out of range!");
-                return INTERPRET_RUNTIME_ERROR;
-            }
-
-            push(ar->values[num]);
 
             break;
         }

@@ -494,9 +494,9 @@ static void map(bool canAssign)
 parse_rule_t rules[] = {
     { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
-    { map,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
+    { map,      NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
-    { list,    index_collection,    PREC_CALL },       // TOKEN_LEFT_BRACKET
+    { list,     index_collection,    PREC_CALL },       // TOKEN_LEFT_BRACKET
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACKET
     { NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
     { NULL,     NULL,    PREC_CALL },       // TOKEN_DOT
@@ -520,17 +520,17 @@ parse_rule_t rules[] = {
     { NULL,     and_,    PREC_AND },        // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
-    { literal,     NULL,    PREC_NONE },    // TOKEN_FALSE
+    { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
-    { literal,     NULL,    PREC_NONE },    // TOKEN_NIL
-    { NULL,     or_,    PREC_OR },         // TOKEN_OR
+    { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
+    { NULL,     or_,    PREC_OR },          // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
     { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
-    { literal,     NULL,    PREC_NONE },    // TOKEN_TRUE
+    { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
