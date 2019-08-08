@@ -1,6 +1,3 @@
-// lists: [val1, val2, ...], [] + [], [] * num, list[num]
-// maps: { key: value, ... }, map[key]
-
 // foreach loop/iterator?
 // each(it in list) {}
 
@@ -9,15 +6,20 @@
 // read files!
 // readLines(path)
 
-var asdf = {
-  count: 1,
-  test: "blabla",
-  ar: [1, 2, 3]
-};
+fun counter(_list)
+{
+    var res = {};
+    for (var i = 0; i < len(_list); i = i + 1)
+    {
+        var key = _list[i];
+        if (!has(res, key))
+        {
+            set(res, key, 0);
+        }
 
-print(asdf);
+        set(res, key, res[key] + 1);
+    }
+    return res;
+}
 
-print(asdf["count"]);
-
-var ar = [1, 2, 3, 4, 5, 6];
-print(ar);
+print(counter(["a", "b", "c", "a", "c", "d"]));

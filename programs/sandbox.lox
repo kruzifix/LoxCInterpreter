@@ -1,0 +1,71 @@
+// lists: [val1, val2, ...], [] + [], [] * num, list[num], len(list), append(list, val)
+// maps: { key: value, ... }, map[key], has(map, key), set(map, key, val)
+
+fun map(_list, _func)
+{
+    var res = [];
+    for (var i = 0; i < len(_list); i = i + 1)
+    {
+        append(res, _func(_list[i]));
+    }
+    return res;
+}
+
+fun filter(_list, _func)
+{
+    var res = [];
+    for (var i = 0; i < len(_list); i = i + 1)
+    {
+        if (_func(_list[i]))
+            append(res, _list[i]);
+    }
+    return res;
+}
+
+fun reduce(_list, _func)
+{
+    if (len(_list) == 0)
+        return nil;
+
+    var res = _list[0];
+    for (var i = 1; i < len(_list); i = i + 1)
+    {
+        res = _func(res, _list[i]);
+    }
+    return res;
+}
+
+fun contains(_list, _val)
+{
+    for (var i = 0; i < len(_list); i = i + 1)
+    {
+        if (_list[i] == _val)
+            return true;
+    }
+    return false;
+}
+
+var a = [2, 4, 6, 8, 1, 15];
+
+print(a);
+print(contains(a, 1));
+print(contains(a, 5));
+
+fun square(_x)
+{
+    return _x * _x;
+}
+
+fun greater10(_x)
+{
+    return _x > 10;
+}
+
+fun add(a, b)
+{
+    return a + b;
+}
+
+print(map(a, square));
+print(filter(map(a, square), greater10));
+print(reduce(a, add));

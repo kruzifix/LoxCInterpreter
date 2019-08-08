@@ -80,6 +80,72 @@ static value_t printf_native(int argCount, value_t* args)
     return NIL_VAL;
 }
 
+//static value_t str_native(int argCount, value_t* args)
+//{
+//    if (argCount != 1)
+//    {
+//        runtime_error("str() expects one argument.");
+//        return NIL_VAL;
+//    }
+//
+//    print_value
+//}
+
+//static value_t split_native(int argCount, value_t* args)
+//{
+//    if (argCount != 1 && !IS_STRING(args[0]))
+//    {
+//        runtime_error("split() expects a single string.");
+//        return NIL_VAL;
+//    }
+//
+//
+//}
+
+static value_t readlines_native(int argCount, value_t* args)
+{
+    if (argCount != 1 && !IS_STRING(args[0]))
+    {
+        runtime_error("readlines() expects a path to a file.");
+        return NIL_VAL;
+    }
+
+    obj_string_t* path = AS_STRING(args[0]);
+
+    FILE* file = fopen(path->chars, "rb");
+    if (!file)
+    {
+        runtime_error("Could not open file \"%s\".", path);
+        return NIL_VAL;
+    }
+
+    fseek(file, 0L, SEEK_END);
+    size_t file_size = ftell(file);
+    rewind(file);
+
+    char* buffer = malloc(file_size + 1);
+    if (!buffer)
+    {
+        runtime_error("Not enough memory to read \"%s\".", path);
+        return NIL_VAL;
+    }
+
+    size_t bytes_read = fread(buffer, sizeof(char), file_size, file);
+    if (bytes_read < file_size)
+    {
+        runtime_error("Could not read file \"%s\".", path);
+        return NIL_VAL;
+    }
+
+    buffer[bytes_read] = '\0';
+
+    // read by lines??
+    // fgets() ??
+
+    fclose(file);
+    return OBJ_VAL(take_string(buffer, file_size));
+}
+
 static value_t len_native(int argCount, value_t* args)
 {
     if (argCount != 1)
@@ -96,6 +162,53 @@ static value_t len_native(int argCount, value_t* args)
 
     runtime_error("len() expects array as parameter.");
     return NIL_VAL;
+}
+
+static value_t append_native(int argCount, value_t* args)
+{
+    if (argCount < 2 || !IS_LIST(*args))
+    {
+        runtime_error("append() expects (list, values...).");
+        return NIL_VAL;
+    }
+
+    obj_list_t* list = AS_LIST(*args);
+
+    for (int i = 1; i < argCount; i++)
+    {
+        write_value_array(&(list->array), args[i]);
+    }
+
+    return NUMBER_VAL(list->array.count);
+}
+
+static value_t has_native(int argCount, value_t* args)
+{
+    if (argCount != 2 && !IS_MAP(args[0]) && !IS_STRING(args[1]))
+    {
+        runtime_error("has() expects (map, string).");
+        return NIL_VAL;
+    }
+
+    obj_map_t* map = AS_MAP(args[0]);
+    obj_string_t* key = AS_STRING(args[1]);
+
+    value_t val;
+    return BOOL_VAL(table_get(&(map->table), key, &val));
+}
+
+static value_t set_native(int argCount, value_t* args)
+{
+    if (argCount != 3 && !IS_MAP(args[0]) && !IS_STRING(args[1]))
+    {
+        runtime_error("set() expects (map, string, value).");
+        return NIL_VAL;
+    }
+
+    obj_map_t* map = AS_MAP(args[0]);
+    obj_string_t* key = AS_STRING(args[1]);
+
+    return BOOL_VAL(table_set(&(map->table), key, args[2]));
 }
 
 static void reset_stack(void)
@@ -151,7 +264,18 @@ void init_vm(void)
     define_native("clock", clock_native);
     define_native("printf", printf_native);
 
+    // string
+    //define_native("str", str_native);
+    //define_native("split", split_native);
+    define_native("readlines", readlines_native);
+
+    // list
     define_native("len", len_native);
+    define_native("append", append_native);
+
+    // map
+    define_native("has", has_native);
+    define_native("set", set_native);
 }
 
 void free_vm(void)
