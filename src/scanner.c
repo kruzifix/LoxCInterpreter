@@ -164,7 +164,16 @@ static token_type_t identifier_type(void)
     {
         case 'a': return check_keyword(1, 2, "nd", TOKEN_AND);
         case 'c': return check_keyword(1, 4, "lass", TOKEN_CLASS);
-        case 'e': return check_keyword(1, 3, "lse", TOKEN_ELSE);
+        case 'e': 
+            if (scanner.current - scanner.start > 1)
+            {
+                switch (scanner.start[1])
+                {
+                    case 'a': return check_keyword(2, 2, "ch", TOKEN_EACH);
+                    case 'l': return check_keyword(2, 2, "se", TOKEN_ELSE);
+                }
+            }
+            break;
         case 'f':
             if (scanner.current - scanner.start > 1)
             {
@@ -176,7 +185,16 @@ static token_type_t identifier_type(void)
                 }
             }
             break;
-        case 'i': return check_keyword(1, 1, "f", TOKEN_IF);
+        case 'i':
+            if (scanner.current - scanner.start > 1)
+            {
+                switch (scanner.start[1])
+                {
+                    case 'f': return check_keyword(2, 0, "", TOKEN_IF);
+                    case 'n': return check_keyword(2, 0, "", TOKEN_IN);
+                }
+            }
+            break;
         case 'n': return check_keyword(1, 2, "il", TOKEN_NIL);
         case 'o': return check_keyword(1, 1, "r", TOKEN_OR);
         case 'p': return check_keyword(1, 4, "rint", TOKEN_PRINT);

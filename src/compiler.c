@@ -520,12 +520,14 @@ parse_rule_t rules[] = {
     { NULL,     and_,    PREC_AND },        // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
+    { NULL,     NULL,    PREC_NONE },       // TOKEN_EACH
     { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
+    { NULL,     NULL,    PREC_NONE },       // TOKEN_IN
     { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
-    { NULL,     or_,    PREC_OR },          // TOKEN_OR
+    { NULL,     or_,     PREC_OR },         // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
@@ -720,6 +722,31 @@ static void print_statement(void)
     emit_byte(OP_PRINT);
 }
 
+static void each_statement(void)
+{
+    begin_scope();
+
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'each'.");
+
+    consume(TOKEN_VAR, "Expect 'var' after '('.");
+
+    int iterator = parse_variable("Expect variable name.");
+
+    consume(TOKEN_IN, "Expect 'in' after variable name.");
+
+    expression();
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after 'each' expression.");
+
+    define_variable(iterator);
+
+    // TODO: generate loop code!
+
+    statement();
+
+    end_scope();
+}
+
 static void for_statement(void)
 {
     begin_scope();
@@ -825,6 +852,7 @@ static void synchronize(void)
         case TOKEN_CLASS:
         case TOKEN_FUN:
         case TOKEN_VAR:
+        case TOKEN_EACH:
         case TOKEN_FOR:
         case TOKEN_IF:
         case TOKEN_WHILE:
@@ -915,6 +943,10 @@ static void statement(void)
     else if (match(TOKEN_IF))
     {
         if_statement();
+    }
+    else if (match(TOKEN_EACH))
+    {
+        each_statement();
     }
     else if (match(TOKEN_FOR))
     {

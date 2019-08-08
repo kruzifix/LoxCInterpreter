@@ -9,15 +9,13 @@
 // read files!
 // readLines(path)
 
-var asdf = {
-  count: 1,
-  test: "blabla",
-  ar: [1, 2, 3]
-};
+var numbers = [1, 2, 3, 4];
 
-print(asdf);
+var it = 0;
 
-print(asdf["count"]);
-
-var ar = [1, 2, 3, 4, 5, 6];
-print(ar);
+each (var it in numbers)
+{
+  var abc = 0;
+  //print(it);
+  print(abc);
+}
