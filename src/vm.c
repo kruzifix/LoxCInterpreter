@@ -63,6 +63,7 @@ static void reset_stack(void)
 {
     vm.stack_top = vm.stack;
     vm.frame_count = 0;
+    vm.openUpvalues = NULL;
 }
 
 static void runtime_error(const char* format, ...)
@@ -77,7 +78,7 @@ static void runtime_error(const char* format, ...)
     for (int i = vm.frame_count - 1; i >= 0; i--)
     {
         call_frame_t* frame = &(vm.frames[i]);
-        obj_function_t* func = frame->function;
+        obj_function_t* func = frame->closure->function;
         // -1 because the IP is sitting on the next instruction to be executed.
         size_t instruction = frame->ip - func->chunk.code - 1;
         fprintf(stderr, "[line %d] in ", func->chunk.lines[instruction]);
@@ -123,11 +124,11 @@ static value_t peek(int distance)
     return vm.stack_top[-1 - distance];
 }
 
-static bool call(obj_function_t* func, uint8_t argCount)
+static bool call(obj_closure_t* closure, uint8_t argCount)
 {
-    if (func->arity != argCount)
+    if (closure->function->arity != argCount)
     {
-        runtime_error("Expected %d arguments but got %d.", func->arity, argCount);
+        runtime_error("Expected %d arguments but got %d.", closure->function->arity, argCount);
         return false;
     }
 
@@ -138,8 +139,8 @@ static bool call(obj_function_t* func, uint8_t argCount)
     }
 
     call_frame_t* frame = &(vm.frames[vm.frame_count++]);
-    frame->function = func;
-    frame->ip = func->chunk.code;
+    frame->closure = closure;
+    frame->ip = closure->function->chunk.code;
 
     frame->slots = vm.stack_top - argCount - 1;
     return true;
@@ -151,8 +152,8 @@ static bool call_value(value_t callee, uint8_t argCount)
     {
         switch (OBJ_TYPE(callee))
         {
-        case OBJ_FUNCTION:
-            return call(AS_FUNCTION(callee), argCount);
+        case OBJ_CLOSURE:
+            return call(AS_CLOSURE(callee), argCount);
         case OBJ_NATIVE: {
             native_func_t func = AS_NATIVE(callee);
             value_t result = func(argCount, vm.stack_top - argCount);
@@ -169,6 +170,42 @@ static bool call_value(value_t callee, uint8_t argCount)
 
     runtime_error("Can only call functions and classes.");
     return false;
+}
+
+static obj_upvalue_t* capture_upvalue(value_t* local)
+{
+    obj_upvalue_t* prevUpvalue = NULL;
+    obj_upvalue_t* upvalue = vm.openUpvalues;
+
+    while (upvalue != NULL && upvalue->location > local)
+    {
+        prevUpvalue = upvalue;
+        upvalue = upvalue->next;
+    }
+
+    if (upvalue != NULL && upvalue->location == local)
+        return upvalue;
+
+    obj_upvalue_t* createdUpvalue = new_upvalue(local);
+    createdUpvalue->next = upvalue;
+
+    if (prevUpvalue == NULL)
+        vm.openUpvalues = createdUpvalue;
+    else
+        prevUpvalue->next = createdUpvalue;
+
+    return createdUpvalue;
+}
+
+static void close_upvalues(value_t* last)
+{
+    while (vm.openUpvalues != NULL && vm.openUpvalues->location >= last)
+    {
+        obj_upvalue_t* upvalue = vm.openUpvalues;
+        upvalue->closed = *upvalue->location;
+        upvalue->location = &(upvalue->closed);
+        vm.openUpvalues = upvalue->next;
+    }
 }
 
 static bool isFalsey(value_t value)
@@ -197,14 +234,14 @@ static interpret_result_t run(bool traceExecution)
 
 #define READ_BYTE() (*(frame->ip++))
 #define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
-#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define CONSTANT_LONG(name) int constIndex = 0; \
     constIndex |= ((int)READ_BYTE() << 16); \
     constIndex |= ((int)READ_BYTE() << 8); \
     constIndex |= READ_BYTE(); \
-    value_t name = frame->function->chunk.constants.values[constIndex]
+    value_t name = frame->closure->function->chunk.constants.values[constIndex]
 
 #define STRING_LONG(name) CONSTANT_LONG(constant); \
     obj_string_t* name = AS_STRING(constant)
@@ -233,7 +270,7 @@ static interpret_result_t run(bool traceExecution)
                 printf(" ]");
             }
             printf("\n");
-            disassemble_instruction(&(frame->function->chunk), (int)(frame->ip - frame->function->chunk.code));
+            disassemble_instruction(&(frame->closure->function->chunk), (int)(frame->ip - frame->closure->function->chunk.code));
         }
 //#endif
 
@@ -333,6 +370,18 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
 
+        case OP_GET_UPVALUE: {
+            uint8_t slot = READ_BYTE();
+            push(*frame->closure->upvalues[slot]->location);
+            break;
+        }
+
+        case OP_SET_UPVALUE: {
+            uint8_t slot = READ_BYTE();
+            *frame->closure->upvalues[slot]->location = peek(0);
+            break;
+        }
+
         case OP_EQUAL: {
             value_t a = pop();
             value_t b = pop();
@@ -410,8 +459,31 @@ static interpret_result_t run(bool traceExecution)
             break;
         }
 
+        case OP_CLOSURE: {
+            obj_function_t* func = AS_FUNCTION(READ_CONSTANT());
+            obj_closure_t* clos = new_closure(func);
+            push(OBJ_VAL(clos));
+            for (int i = 0; i < clos->upvalueCount; i++)
+            {
+                uint8_t isLocal = READ_BYTE();
+                uint8_t index = READ_BYTE();
+                if (isLocal)
+                    clos->upvalues[i] = capture_upvalue(frame->slots + index);
+                else
+                    clos->upvalues[i] = frame->closure->upvalues[index];
+            }
+            break;
+        }
+
+        case OP_CLOSE_UPVALUE:
+            close_upvalues(vm.stack_top - 1);
+            pop();
+            break;
+
         case OP_RETURN: {
             value_t result = pop();
+
+            close_upvalues(frame->slots);
 
             vm.frame_count--;
             if (vm.frame_count == 0)
@@ -440,7 +512,10 @@ interpret_result_t interpret(const char* source, interpreter_params_t* params)
         return INTERPRET_COMPILE_ERROR;
 
     push(OBJ_VAL(func));
-    call_value(OBJ_VAL(func), 0);
+    obj_closure_t* closure = new_closure(func);
+    pop();
+    push(OBJ_VAL(closure));
+    call_value(OBJ_VAL(closure), 0);
 
     return run(params->trace_execution);
 }

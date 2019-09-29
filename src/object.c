@@ -52,9 +52,23 @@ obj_function_t* new_function(void)
     obj_function_t* func = ALLOCATE_OBJ(obj_function_t, OBJ_FUNCTION);
 
     func->arity = 0;
+    func->upvalueCount = 0;
     func->name = NULL;
     init_chunk(&(func->chunk));
     return func;
+}
+
+obj_closure_t* new_closure(obj_function_t* function)
+{
+    obj_upvalue_t** upvalues = ALLOCATE(obj_upvalue_t*, function->upvalueCount);
+    for (int i = 0; i < function->upvalueCount; i++)
+        upvalues[i] = NULL;
+
+    obj_closure_t* clos = ALLOCATE_OBJ(obj_closure_t, OBJ_CLOSURE);
+    clos->function = function;
+    clos->upvalues = upvalues;
+    clos->upvalueCount = function->upvalueCount;
+    return clos;
 }
 
 obj_native_t* new_native(native_func_t func)
@@ -94,6 +108,15 @@ obj_string_t* copy_string(const char* chars, int length)
     return allocate_string(heapChars, length, hash);
 }
 
+obj_upvalue_t* new_upvalue(value_t* slot)
+{
+    obj_upvalue_t* upvalue = ALLOCATE_OBJ(obj_upvalue_t, OBJ_UPVALUE);
+    upvalue->location = slot;
+    upvalue->closed = NIL_VAL;
+    upvalue->next = NULL;
+    return upvalue;
+}
+
 void print_object(value_t value)
 {
     switch (OBJ_TYPE(value))
@@ -103,12 +126,20 @@ void print_object(value_t value)
         printf("<fn %s>", func->name != NULL ? func->name->chars : "SCRIPT");
         break;
     }
+    case OBJ_CLOSURE: {
+        obj_closure_t* clos = AS_CLOSURE(value);
+        printf("<fn %s>", clos->function->name != NULL ? clos->function->name->chars : "SCRIPT");
+        break;
+    }
     case OBJ_NATIVE: {
         printf("<native fn>");
         break;
     }
     case OBJ_STRING:
         printf("%s", AS_CSTRING(value));
+        break;
+    case OBJ_UPVALUE:
+        printf("upvalue");
         break;
     }
 }

@@ -1,4 +1,0 @@
-for (var bla = 5; bla > 0; bla = bla - 1)
-{
-	print(bla);
-}

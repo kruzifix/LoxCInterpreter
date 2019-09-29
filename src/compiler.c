@@ -42,7 +42,13 @@ typedef struct {
 typedef struct {
     token_t name;
     int depth;
+    bool isCaptured;
 } local_t;
+
+typedef struct {
+    uint8_t index;
+    bool isLocal;
+} upvalue_t;
 
 typedef enum {
     TYPE_FUNCTION,
@@ -56,6 +62,7 @@ typedef struct compiler__ {
 
     local_t locals[UINT8_COUNT];
     int local_count;
+    upvalue_t upvalues[UINT8_COUNT];
     int scope_depth;
 } compiler_t;
 
@@ -231,6 +238,7 @@ static void init_compiler(compiler_t* compiler, function_type_t type)
 
     local_t* local = &current->locals[current->local_count++];
     local->depth = 0;
+    local->isCaptured = false;
     local->name.start = "";
     local->name.length = 0;
 }
@@ -261,17 +269,20 @@ static void end_scope(void)
 {
     --current->scope_depth;
 
-    int n = 0;
+    //int n = 0;
 
     while (current->local_count > 0 &&
         current->locals[current->local_count - 1].depth > current->scope_depth)
     {
-        ++n;
+        if (current->locals[current->local_count - 1].isCaptured)
+            emit_byte(OP_CLOSE_UPVALUE);
+        else
+            emit_byte(OP_POP);
         --current->local_count;
     }
 
-    if (n > 0)
-        emit_bytes(OP_POPN, (uint8_t)n);
+    //if (n > 0)
+    //    emit_bytes(OP_POPN, (uint8_t)n);
 }
 
 static void expression(void);
@@ -367,28 +378,39 @@ static void string(bool canAssign)
 
 static void named_variable(token_t name, bool canAssign)
 {
+    uint8_t getOp, setOp;
     int arg = resolve_local(current, &name);
-    bool local = true;
-    if (arg == -1)
+    if (arg != -1)
+    {
+        getOp = OP_GET_LOCAL;
+        setOp = OP_SET_LOCAL;
+    }
+    else if ((arg = resolve_upvalue(current, &name)) != -1)
+    {
+        getOp = OP_GET_UPVALUE;
+        setOp = OP_SET_UPVALUE;
+    }
+    else
     {
         arg = identifier_constant(&name);
-        local = false;
+        getOp = OP_GET_GLOBAL;
+        setOp = OP_SET_GLOBAL;
     }
 
     if (canAssign && match(TOKEN_EQUAL))
     {
         expression();
-        if (local)
-            emit_bytes(OP_SET_LOCAL, (uint8_t)arg);
-        else
+        if (setOp == OP_SET_GLOBAL)
             emit_with_arg(OP_SET_GLOBAL, OP_SET_GLOBAL_LONG, arg);
+        else
+            emit_bytes(setOp, (uint8_t)arg);
     }
     else
     {
-        if (local)
-            emit_bytes(OP_GET_LOCAL, (uint8_t)arg);
-        else
+        if (getOp == OP_GET_GLOBAL)
             emit_with_arg(OP_GET_GLOBAL, OP_GET_GLOBAL_LONG, arg);
+        else
+            emit_bytes(getOp, (uint8_t)arg);
     }
 }
 
@@ -542,6 +564,46 @@ static int resolve_local(compiler_t* compiler, token_t* name)
     return -1;
 }
 
+static int add_upvalue(compiler_t* compiler, uint8_t index, bool isLocal)
+{
+    int upvalueCount = compiler->function->upvalueCount;
+    for (int i = 0; i < upvalueCount; i++)
+    {
+        upvalue_t* upvalue = &compiler->upvalues[i];
+        if (upvalue->index == index && upvalue->isLocal == isLocal)
+            return i;
+    }
+
+    if (upvalueCount >= UINT8_COUNT)
+    {
+        error("Too many closure variables in function.");
+        return 0;
+    }
+
+    compiler->upvalues[upvalueCount].isLocal = isLocal;
+    compiler->upvalues[upvalueCount].index = index;
+    return compiler->function->upvalueCount++;
+}
+
+static int resolve_upvalue(compiler_t* compiler, token_t* name)
+{
+    if (compiler->enclosing == NULL)
+        return -1;
+
+    int local = resolve_local(compiler->enclosing, name);
+    if (local != -1)
+    {
+        compiler->enclosing->locals[local].isCaptured = true;
+        return add_upvalue(compiler, (uint8_t)local, true);
+    }
+
+    int upvalue = resolve_upvalue(compiler->enclosing, name);
+    if (upvalue != -1)
+        return add_upvalue(compiler, (uint8_t)upvalue, false);
+
+    return -1;
+}
+
 static void add_local(token_t name)
 {
     if (current->local_count == UINT8_COUNT)
@@ -553,6 +615,7 @@ static void add_local(token_t name)
     local_t* local = current->locals + current->local_count++;
     local->name = name;
     local->depth = -1;
+    local->isCaptured = false;
 }
 
 static void declare_variable(void)
@@ -839,7 +902,12 @@ static void function(function_type_t type)
 
     // TODO: somehow pass 'printCode' param to here!
     obj_function_t* func = end_compiler(false);
-    emit_constant(OBJ_VAL(func));
+    emit_bytes(OP_CLOSURE, make_constant(OBJ_VAL(func)));
+
+    for (int i = 0; i < func->upvalueCount; i++)
+    {
+        emit_bytes(compiler.upvalues[i].isLocal ? 1 : 0, compiler.upvalues[i].index);
+    }
 }
 
 static void fun_declaration(void)

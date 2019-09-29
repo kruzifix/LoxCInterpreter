@@ -25,6 +25,12 @@ static void free_object(obj_t* obj)
         FREE(obj_function_t, func);
         break;
     }
+    case OBJ_CLOSURE: {
+        obj_closure_t* clos = (obj_closure_t*)obj;
+        FREE_ARRAY(value_t, clos->upvalues, clos->upvalueCount);
+        FREE(obj_closure_t, clos);
+        break;
+    }
     case OBJ_NATIVE: {
         FREE(obj_native_t, obj);
         break;
@@ -35,6 +41,9 @@ static void free_object(obj_t* obj)
         FREE(obj_string_t, obj);
         break;
     }
+    case OBJ_UPVALUE:
+        FREE(obj_upvalue_t, obj);
+        break;
     }
 }
 
